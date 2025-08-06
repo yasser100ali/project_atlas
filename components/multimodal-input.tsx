@@ -180,7 +180,6 @@ export function MultimodalInput({
       });
 
       setLocalStorageInput("");
-      setAttachments([]);
 
       if (width && width > 768) {
         textareaRef.current?.focus();
