@@ -1,0 +1,54 @@
+Directory structure:
+└── apex_v2/
+     ├── README.md
+     ├── app/
+     │    ├── (chat)/
+     │    │    └── page.tsx
+     │    ├── favicon.ico
+     │    ├── globals.css
+     │    ├── icons.tsx
+     │    ├── layout.tsx
+     │    └── og/
+     │         ├── background.png
+     │         └── route.tsx
+     ├── assets/
+     │    ├── geist-semibold.ttf
+     │    └── geist.ttf
+     ├── backend/
+     │    ├── app.py
+     │    └── utils/
+     │         ├── __init__.py
+     │         ├── attachment.py
+     │         ├── prompt.py
+     │         ├── tools.py
+     │         └── utils.py
+     ├── components/
+     │    ├── chat.tsx
+     │    ├── icons.tsx
+     │    ├── markdown.tsx
+     │    ├── message.tsx
+     │    ├── multimodal-input.tsx
+     │    ├── navbar.tsx
+     │    ├── overview.tsx
+     │    ├── preview-attachment.tsx
+     │    ├── ui/
+     │    │    ├── button.tsx
+     │    │    └── textarea.tsx
+     │    └── weather.tsx
+     ├── components.json
+     ├── hooks/
+     │    └── use-scroll-to-bottom.tsx
+     ├── lib/
+     │    └── utils.ts
+     ├── next.config.js
+     ├── package-lock.json
+     ├── package.json
+     ├── pnpm-lock.yaml
+     ├── postcss.config.js
+     ├── public/
+     │    ├── next.svg
+     │    └── vercel.svg
+     ├── requirements.txt
+     ├── tailwind.config.js
+     ├── tsconfig.json
+     └── vercel.json

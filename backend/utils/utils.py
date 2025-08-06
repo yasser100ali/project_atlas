@@ -12,7 +12,6 @@ client = OpenAI(
     api_key=os.environ.get("OPENAI_API_KEY"),
 )
 
-
 available_tools = {
     "get_current_weather": get_current_weather,
 }
