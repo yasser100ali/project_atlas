@@ -47,12 +47,29 @@ def stream_text(messages: List[ChatCompletionMessageParam], protocol: str = 'dat
         }]
     )
 
+    finish_reason = None
+    
     for chunk in stream:
+        # Check for usage information in the chunk
+        if hasattr(chunk, 'usage') and chunk.usage:
+            usage = chunk.usage
+            prompt_tokens = usage.prompt_tokens
+            completion_tokens = usage.completion_tokens
+
+            yield 'e:{{"finishReason":"{reason}","usage":{{"promptTokens":{prompt},"completionTokens":{completion}}},"isContinued":false}}\n'.format(
+                reason=finish_reason or "stop",
+                prompt=prompt_tokens,
+                completion=completion_tokens
+            )
+            return
+
         for choice in chunk.choices:
             if choice.finish_reason == "stop":
+                finish_reason = "stop"
                 continue
 
             elif choice.finish_reason == "tool_calls":
+                finish_reason = "tool_calls"
                 for tool_call in draft_tool_calls:
                     yield '9:{{"toolCallId":"{id}","toolName":"{name}","args":{args}}}\n'.format(
                         id=tool_call["id"],
@@ -86,14 +103,8 @@ def stream_text(messages: List[ChatCompletionMessageParam], protocol: str = 'dat
             else:
                 yield '0:{text}\n'.format(text=json.dumps(choice.delta.content))
 
-        if chunk.choices == []:
-            usage = chunk.usage
-            prompt_tokens = usage.prompt_tokens
-            completion_tokens = usage.completion_tokens
-
-            yield 'e:{{"finishReason":"{reason}","usage":{{"promptTokens":{prompt},"completionTokens":{completion}}},"isContinued":false}}\n'.format(
-                reason="tool-calls" if len(
-                    draft_tool_calls) > 0 else "stop",
-                prompt=prompt_tokens,
-                completion=completion_tokens
-            )
+    # Fallback in case usage wasn't provided in the stream
+    if finish_reason:
+        yield 'e:{{"finishReason":"{reason}","usage":{{"promptTokens":0,"completionTokens":0}},"isContinued":false}}\n'.format(
+            reason=finish_reason
+        )
