@@ -3,5 +3,11 @@
     "backend/app.py": {
       "excludeFiles": "{.next,.git,node_modules}/**"
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/backend/app.py"
+    }
+  ]
 }
