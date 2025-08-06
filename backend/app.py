@@ -17,7 +17,7 @@ class Request(BaseModel):
     messages: List[ClientMessage]
 
 
-@app.post("/chat")
+@app.post("/api/chat")
 async def handle_chat_data(request: Request, protocol: str = Query('data')):
     print("Received request in handle_chat_data")
     messages = request.messages
