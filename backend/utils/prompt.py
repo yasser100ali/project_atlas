@@ -3,6 +3,7 @@ from enum import Enum
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from pydantic import BaseModel
 import base64
+import fitz  # PyMuPDF
 from typing import List, Optional, Any
 from .attachment import ClientAttachment, Attachment
 
@@ -31,7 +32,7 @@ class ClientMessage(BaseModel):
 def convert_to_openai_messages(messages: List[ClientMessage], attachments: Optional[List[Attachment]] = None) -> List[ChatCompletionMessageParam]:
     openai_messages = []
 
-    for message in messages:
+    for index, message in enumerate(messages):
         parts = []
         tool_calls = []
 
@@ -40,7 +41,8 @@ def convert_to_openai_messages(messages: List[ClientMessage], attachments: Optio
             'text': message.content
         })
 
-        if attachments:
+        # Only add attachments to the last user message
+        if attachments and message.role == 'user' and index == len(messages) - 1:
             for attachment in attachments:
                 if attachment.type.startswith('image/'):
                     parts.append({
@@ -48,6 +50,20 @@ def convert_to_openai_messages(messages: List[ClientMessage], attachments: Optio
                         'image_url': {
                             'url': attachment.content
                         }
+                    })
+                elif attachment.type == 'application/pdf':
+                    # Decode the base64 string
+                    pdf_bytes = base64.b64decode(attachment.content.split(',')[1])
+                    pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+                    
+                    pdf_text = ""
+                    for page_num in range(len(pdf_document)):
+                        page = pdf_document.load_page(page_num)
+                        pdf_text += page.get_text()
+
+                    parts.append({
+                        'type': 'text',
+                        'text': f"PDF Content:\n{pdf_text}"
                     })
 
         if message.experimental_attachments:

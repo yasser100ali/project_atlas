@@ -41,3 +41,5 @@ langchain
 langchain-openai
 jobspy
 langchain-community
+concurrently
+PyMuPDF
