@@ -3,10 +3,13 @@ from langchain_openai import ChatOpenAI
 from langchain import hub
 from .job_scraper import JobScraper
 from .resume import ResumeGenerator
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class CareerAgent:
     def __init__(self):
-        self.llm = ChatOpenAI(temperature=0, model="gpt-4o")
+        self.llm = ChatOpenAI(temperature=0, model="gpt-4.1")
         self.tools = self._load_tools()
         self.prompt = self._load_prompt()
         self.agent = self._create_agent()
