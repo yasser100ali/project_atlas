@@ -3,7 +3,8 @@ from enum import Enum
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from pydantic import BaseModel
 import base64
-import fitz  # PyMuPDF
+from io import BytesIO
+from pypdf import PdfReader
 from typing import List, Optional, Any
 from .attachment import ClientAttachment, Attachment
 
@@ -52,14 +53,13 @@ def convert_to_openai_messages(messages: List[ClientMessage], attachments: Optio
                         }
                     })
                 elif attachment.type == 'application/pdf':
-                    # Decode the base64 string
                     pdf_bytes = base64.b64decode(attachment.content.split(',')[1])
-                    pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+                    pdf_file = BytesIO(pdf_bytes)
+                    pdf_reader = PdfReader(pdf_file)
                     
                     pdf_text = ""
-                    for page_num in range(len(pdf_document)):
-                        page = pdf_document.load_page(page_num)
-                        pdf_text += page.get_text()
+                    for page in pdf_reader.pages:
+                        pdf_text += page.extract_text() or ""
 
                     parts.append({
                         'type': 'text',
