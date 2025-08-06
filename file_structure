@@ -15,6 +15,10 @@ Directory structure:
      │    ├── geist-semibold.ttf
      │    └── geist.ttf
      ├── backend/
+     │    ├── agents/
+     │    │    ├── career_copilot.py
+     │    │    ├── job_scraper.py
+     │    │    └── resume.py
      │    ├── app.py
      │    └── utils/
      │         ├── __init__.py
@@ -28,7 +32,6 @@ Directory structure:
      │    ├── markdown.tsx
      │    ├── message.tsx
      │    ├── multimodal-input.tsx
-     │    ├── navbar.tsx
      │    ├── overview.tsx
      │    ├── preview-attachment.tsx
      │    ├── ui/
@@ -36,6 +39,7 @@ Directory structure:
      │    │    └── textarea.tsx
      │    └── weather.tsx
      ├── components.json
+     ├── file_structure
      ├── hooks/
      │    └── use-scroll-to-bottom.tsx
      ├── lib/
