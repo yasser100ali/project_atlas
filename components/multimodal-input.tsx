@@ -2,11 +2,13 @@
 
 import type { ChatRequestOptions, CreateMessage, Message } from "ai";
 import { motion } from "framer-motion";
+import { Paperclip, X } from "lucide-react";
 import type React from "react";
 import {
-  useRef,
-  useEffect,
   useCallback,
+  useEffect,
+  useRef,
+  useState,
   type Dispatch,
   type SetStateAction,
 } from "react";
@@ -65,6 +67,9 @@ export function MultimodalInput({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -75,7 +80,9 @@ export function MultimodalInput({
   const adjustHeight = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight + 2}px`;
+      textareaRef.current.style.height = `${
+        textareaRef.current.scrollHeight + 2
+      }px`;
     }
   };
 
@@ -105,18 +112,110 @@ export function MultimodalInput({
     adjustHeight();
   };
 
-  const submitForm = useCallback(() => {
-    handleSubmit(undefined, {});
-    setLocalStorageInput("");
-
-    if (width && width > 768) {
-      textareaRef.current?.focus();
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      setAttachments((prev) => [...prev, ...Array.from(files)]);
     }
-  }, [handleSubmit, setLocalStorageInput, width]);
+  };
+
+  const handleAttachClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const removeAttachment = (indexToRemove: number) => {
+    setAttachments((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      setAttachments((prev) => [...prev, ...Array.from(files)]);
+    }
+  };
+
+  const submitForm = useCallback(() => {
+    const fileToDataUrl = (file: File): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    };
+
+    const processSubmit = async () => {
+      const attachmentData = await Promise.all(
+        attachments.map(async (file) => ({
+          name: file.name,
+          type: file.type,
+          content: await fileToDataUrl(file),
+        })),
+      );
+
+      handleSubmit(undefined, {
+        data: {
+          attachments: attachmentData,
+        },
+      });
+
+      setLocalStorageInput("");
+      setAttachments([]);
+
+      if (width && width > 768) {
+        textareaRef.current?.focus();
+      }
+    };
+
+    processSubmit();
+  }, [handleSubmit, setLocalStorageInput, width, attachments]);
 
   return (
-    <div className="relative w-full flex flex-col gap-4">
-      {messages.length === 0 && (
+    <div className="relative w-full flex flex-col gap-2">
+      {attachments.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
+          {attachments.map((file, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative bg-muted p-2 rounded-lg flex items-center gap-2 text-sm"
+            >
+              <span>{file.name}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 rounded-full flex-shrink-0"
+                onClick={() => removeAttachment(index)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {messages.length === 0 && attachments.length === 0 && (
         <div className="grid sm:grid-cols-2 gap-2 w-full">
           {suggestedActions.map((suggestedAction, index) => (
             <motion.div
@@ -147,53 +246,83 @@ export function MultimodalInput({
         </div>
       )}
 
-      <Textarea
-        ref={textareaRef}
-        placeholder="Send a message..."
-        value={input}
-        onChange={handleInput}
+      <div
         className={cn(
-          "min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-xl !text-base bg-muted",
-          className,
+          "flex w-full items-end gap-2 rounded-xl border bg-muted p-2 transition-colors",
+          isDragOver && "bg-primary/20",
         )}
-        rows={3}
-        autoFocus
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          className="flex-shrink-0"
+          onClick={handleAttachClick}
+        >
+          <Paperclip className="h-5 w-5" />
+          <span className="sr-only">Attach file</span>
+        </Button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          onChange={handleFileChange}
+          multiple
+        />
 
-            if (isLoading) {
-              toast.error("Please wait for the model to finish its response!");
-            } else {
-              submitForm();
+        <Textarea
+          ref={textareaRef}
+          placeholder="Send a message..."
+          value={input}
+          onChange={handleInput}
+          className={cn(
+            "min-h-[24px] max-h-[calc(75dvh)] w-full resize-none border-none bg-transparent !text-base shadow-none focus-visible:ring-0",
+            className,
+          )}
+          rows={1}
+          autoFocus
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+
+              if (isLoading) {
+                toast.error(
+                  "Please wait for the model to finish its response!",
+                );
+              } else {
+                submitForm();
+              }
             }
-          }
-        }}
-      />
+          }}
+        />
 
-      {isLoading ? (
-        <Button
-          className="rounded-full p-1.5 h-fit absolute bottom-2 right-2 m-0.5 border dark:border-zinc-600"
-          onClick={(event) => {
-            event.preventDefault();
-            stop();
-            setMessages((messages) => sanitizeUIMessages(messages));
-          }}
-        >
-          <StopIcon size={14} />
-        </Button>
-      ) : (
-        <Button
-          className="rounded-full p-1.5 h-fit absolute bottom-2 right-2 m-0.5 border dark:border-zinc-600"
-          onClick={(event) => {
-            event.preventDefault();
-            submitForm();
-          }}
-          disabled={input.length === 0}
-        >
-          <ArrowUpIcon size={14} />
-        </Button>
-      )}
+        {isLoading ? (
+          <Button
+            className="rounded-full p-1.5 h-fit"
+            onClick={(event) => {
+              event.preventDefault();
+              stop();
+              setMessages((messages) => sanitizeUIMessages(messages));
+            }}
+          >
+            <StopIcon size={14} />
+          </Button>
+        ) : (
+          <Button
+            className="rounded-full p-1.5 h-fit"
+            onClick={(event) => {
+              event.preventDefault();
+              submitForm();
+            }}
+            disabled={input.length === 0 && attachments.length === 0}
+          >
+            <ArrowUpIcon size={14} />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

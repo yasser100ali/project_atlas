@@ -4,12 +4,14 @@ from openai.types.chat.chat_completion_message_param import ChatCompletionMessag
 from pydantic import BaseModel
 import base64
 from typing import List, Optional, Any
-from .attachment import ClientAttachment
+from .attachment import ClientAttachment, Attachment
+
 
 class ToolInvocationState(str, Enum):
     CALL = 'call'
     PARTIAL_CALL = 'partial-call'
     RESULT = 'result'
+
 
 class ToolInvocation(BaseModel):
     state: ToolInvocationState
@@ -25,7 +27,8 @@ class ClientMessage(BaseModel):
     experimental_attachments: Optional[List[ClientAttachment]] = None
     toolInvocations: Optional[List[ToolInvocation]] = None
 
-def convert_to_openai_messages(messages: List[ClientMessage]) -> List[ChatCompletionMessageParam]:
+
+def convert_to_openai_messages(messages: List[ClientMessage], attachments: Optional[List[Attachment]] = None) -> List[ChatCompletionMessageParam]:
     openai_messages = []
 
     for message in messages:
@@ -37,23 +40,32 @@ def convert_to_openai_messages(messages: List[ClientMessage]) -> List[ChatComple
             'text': message.content
         })
 
-        if (message.experimental_attachments):
+        if attachments:
+            for attachment in attachments:
+                if attachment.type.startswith('image/'):
+                    parts.append({
+                        'type': 'image_url',
+                        'image_url': {
+                            'url': attachment.content
+                        }
+                    })
+
+        if message.experimental_attachments:
             for attachment in message.experimental_attachments:
-                if (attachment.contentType.startswith('image')):
+                if attachment.contentType.startswith('image'):
                     parts.append({
                         'type': 'image_url',
                         'image_url': {
                             'url': attachment.url
                         }
                     })
-
-                elif (attachment.contentType.startswith('text')):
+                elif attachment.contentType.startswith('text'):
                     parts.append({
                         'type': 'text',
                         'text': attachment.url
                     })
 
-        if(message.toolInvocations):
+        if message.toolInvocations:
             for toolInvocation in message.toolInvocations:
                 tool_calls.append({
                     "id": toolInvocation.toolCallId,
@@ -64,7 +76,7 @@ def convert_to_openai_messages(messages: List[ClientMessage]) -> List[ChatComple
                     }
                 })
 
-        tool_calls_dict = {"tool_calls": tool_calls} if tool_calls else {"tool_calls": None}
+        tool_calls_dict = {"tool_calls": tool_calls} if tool_calls else {}
 
         openai_messages.append({
             "role": message.role,
@@ -72,14 +84,13 @@ def convert_to_openai_messages(messages: List[ClientMessage]) -> List[ChatComple
             **tool_calls_dict,
         })
 
-        if(message.toolInvocations):
+        if message.toolInvocations:
             for toolInvocation in message.toolInvocations:
                 tool_message = {
                     "role": "tool",
                     "tool_call_id": toolInvocation.toolCallId,
                     "content": json.dumps(toolInvocation.result),
                 }
-
                 openai_messages.append(tool_message)
 
     return openai_messages
