@@ -14,4 +14,4 @@ langchain-community
 pypdf
 
 # Other tools
-jobspy
+python-jobspy

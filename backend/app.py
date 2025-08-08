@@ -3,37 +3,36 @@ from typing import List, Optional
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query
-from fastapi.responses import StreamingResponse
-from .utils.prompt import ClientMessage, convert_to_openai_messages
-from .utils.utils import stream_text
-from .utils.attachment import Attachment
-
+from fastapi.responses import JSONResponse
+from .utils.prompt import ClientMessage
+from .agents.career_copilot import CareerAgent
 
 load_dotenv(".env")
 
 app = FastAPI()
 
+# Instantiate the CareerAgent once when the application starts
+career_agent = CareerAgent()
 
 class Request(BaseModel):
     messages: List[ClientMessage]
     data: Optional[dict] = None
 
-
 @app.post("/api/chat")
-async def handle_chat_data(request: Request, protocol: str = Query('data')):
+async def handle_chat_data(request: Request):
     print("Received request in handle_chat_data")
 
-    attachments = []
-    if request.data and 'attachments' in request.data:
-        attachments = [Attachment(**attachment) for attachment in request.data['attachments']]
-        print(f"Received {len(attachments)} attachments:")
-        for attachment in attachments:
-            print(f"- {attachment.name} ({attachment.type})")
+    # Extract the last user message to use as the prompt
+    if not request.messages:
+        return JSONResponse(content={"error": "No messages provided"}, status_code=400)
+    
+    user_message = request.messages[-1].content
 
-    messages = request.messages
-    openai_messages = convert_to_openai_messages(messages, attachments)
-    print("Messages sent to OpenAI:", openai_messages)
+    # Run the agent with the user's message
+    agent_response = career_agent.run(prompt=user_message)
 
-    response = StreamingResponse(stream_text(openai_messages, protocol))
-    response.headers['x-vercel-ai-data-stream'] = 'v1'
-    return response
+    # The Langchain agent's response is a dictionary.
+    # We will extract the 'output' to send back to the client.
+    final_response = agent_response.get("output", "Sorry, I encountered an error.")
+
+    return JSONResponse(content={"response": final_response})

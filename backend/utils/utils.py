@@ -43,7 +43,7 @@ def stream_text(messages: List[ChatCompletionMessageParam], protocol: str = 'dat
                     },
                     "required": ["latitude", "longitude"],
                 },
-            },
+            }
         }]
     )
 

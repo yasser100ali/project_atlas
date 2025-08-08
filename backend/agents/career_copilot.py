@@ -1,6 +1,7 @@
 from langchain.agents import create_react_agent, AgentExecutor
 from langchain_openai import ChatOpenAI
 from langchain import hub
+from langchain.callbacks.stdout import StdOutCallbackHandler
 from .job_scraper import JobScraper
 from .resume import ResumeGenerator
 from dotenv import load_dotenv
@@ -27,7 +28,13 @@ class CareerAgent:
         return create_react_agent(self.llm, self.tools, self.prompt)
 
     def _create_agent_executor(self):
-        return AgentExecutor(agent=self.agent, tools=self.tools, verbose=True)
+        # Add the StdOutCallbackHandler to the callbacks list
+        return AgentExecutor(
+            agent=self.agent,
+            tools=self.tools,
+            verbose=True,
+            callbacks=[StdOutCallbackHandler()]
+        )
 
     def run(self, prompt: str):
         return self.agent_executor.invoke({"input": prompt})

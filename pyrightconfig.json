@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/pyright/main/packages/pyright/schema/pyrightconfig.schema.json",
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "warning",
+  "executionEnvironments": [
+    {
+      "root": "./backend",
+      "extraPaths": [
+        "./backend",
+        "./.venv/lib/python3.12/site-packages"
+      ]
+    },
+    {
+      "root": ".",
+      "extraPaths": [
+        "./backend",
+        "./.venv/lib/python3.12/site-packages"
+      ]
+    }
+  ]
+}
