@@ -23,14 +23,14 @@ import { Textarea } from "./ui/textarea";
 
 const suggestedActions = [
   {
-    title: "What is the weather",
-    label: "in San Francisco?",
-    action: "What is the weather in San Francisco?",
+    title: "Help me build my resume",
+    label: "from my experience",
+    action: "Help me build my resume",
   },
   {
-    title: "How is python useful",
-    label: "for AI engineers?",
-    action: "How is python useful for AI engineers?",
+    title: "Find jobs in the Bay",
+    label: "for AI Engineers",
+    action: "Find jobs in the Bay for AI Engineers",
   },
 ];
 
