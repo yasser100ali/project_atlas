@@ -1,15 +1,14 @@
-# Core application dependencies
 fastapi
 python-dotenv
 openai
 pydantic
 python-multipart
+requests
+PyYAML
 
-# Langchain - using specific packages to reduce size
-langchain-core
+# LangChain (keep minimal)
+langchain
 langchain-openai
-langchain-community
 
 # PDF processing
 pypdf
-
