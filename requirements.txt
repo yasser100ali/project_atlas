@@ -13,5 +13,3 @@ langchain-community
 # PDF processing
 pypdf
 
-# Other tools
-python-jobspy
