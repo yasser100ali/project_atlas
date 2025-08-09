@@ -1,0 +1,19 @@
+# Keep heavy local artifacts out of Vercel upload
+.next
+node_modules
+_dep_size
+**/__pycache__
+**/*.pyc
+.DS_Store
+
+# Local env and tooling
+.env
+.venv
+venv
+.vercel
+
+# Dist/coverage
+coverage
+out
+build
+

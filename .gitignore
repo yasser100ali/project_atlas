@@ -17,6 +17,7 @@ venv/
 .env
 __pycache__
 .venv/
+_dep_size/
 
 # production
 /build
