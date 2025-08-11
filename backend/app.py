@@ -5,14 +5,13 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from .utils.prompt import ClientMessage
-from .agents.career_copilot import CareerAgent
+from .agents.career_copilot import handle_user_message
 
 load_dotenv(".env")
 
 app = FastAPI()
 
-# Instantiate the CareerAgent once when the application starts
-career_agent = CareerAgent()
+# Agents SDK uses a session internally; nothing to instantiate here
 
 class Request(BaseModel):
     messages: List[ClientMessage]
@@ -28,11 +27,6 @@ async def handle_chat_data(request: Request):
     
     user_message = request.messages[-1].content
 
-    # Run the agent with the user's message
-    agent_response = career_agent.run(prompt=user_message)
-
-    # The Langchain agent's response is a dictionary.
-    # We will extract the 'output' to send back to the client.
-    final_response = agent_response.get("output", "Sorry, I encountered an error.")
-
+    # Run the OpenAI Agent
+    final_response = await handle_user_message(user_message)
     return JSONResponse(content={"response": final_response})

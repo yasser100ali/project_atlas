@@ -6,9 +6,8 @@ python-multipart
 requests
 PyYAML
 
-# LangChain (keep minimal)
-langchain
-langchain-openai
+# OpenAI Agents SDK
+openai-agents
 
 # PDF processing
 pypdf

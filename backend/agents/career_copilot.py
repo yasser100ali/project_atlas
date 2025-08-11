@@ -1,40 +1,83 @@
-from langchain.agents import create_react_agent, AgentExecutor
-from langchain_openai import ChatOpenAI
-from langchain import hub
-from langchain.callbacks.stdout import StdOutCallbackHandler
-from .job_scraper import JobScraper
-from .resume import ResumeGenerator
+import asyncio
+import json
+from typing import Optional, List, Literal, Dict, Any
+
 from dotenv import load_dotenv
+
+# OpenAI Agents SDK
+from agents import Agent, Runner, SQLiteSession, function_tool  # type: ignore
+
+# Local utilities
+from ..utils.tools import search_jobs
 
 load_dotenv()
 
-class CareerAgent:
-    def __init__(self):
-        self.llm = ChatOpenAI(temperature=0, model="gpt-4.1")
-        self.tools = self._load_tools()
-        self.prompt = self._load_prompt()
-        self.agent = self._create_agent()
-        self.agent_executor = self._create_agent_executor()
 
-    def _load_tools(self):
-        return [JobScraper(), ResumeGenerator()]
+@function_tool(name_override="job_scraper")
+async def job_scraper(
+    query: str,
+    location: str = "San Francisco, California, United States",
+    pages: int = 1,
+    date_posted: Optional[str] = None,
+    remote_only: bool = False,
+    employment_types: Optional[List[str]] = None,
+    salary_min: Optional[float] = None,
+    salary_max: Optional[float] = None,
+    salary_currency: Optional[str] = None,
+    extra: Optional[Dict[str, Any]] = None,
+    top_k: int = 10,
+) -> str:
+    """Search for jobs using JSearch with optional filters. Return a JSON string list of jobs."""
+    jobs = search_jobs(
+        query=query,
+        location=location,
+        pages=pages,
+        date_posted=date_posted,
+        remote_only=remote_only,
+        employment_types=employment_types,
+        salary_min=salary_min,
+        salary_max=salary_max,
+        salary_currency=salary_currency,
+        extra=extra,
+    ) or []
+    return json.dumps(jobs[: max(1, top_k)])
 
-    def _load_prompt(self):
-        return hub.pull("hwchase17/react").partial(
-            instructions="You are a helpful career assistant. Your goal is to help users with their job search. You have access to a job scraper and a resume generator. When a user asks for jobs, use the job scraper. When a user wants to create a resume, use the resume generator."
-        )
 
-    def _create_agent(self):
-        return create_react_agent(self.llm, self.tools, self.prompt)
+@function_tool(name_override="resume_generator")
+def resume_generator(
+    profile: Dict[str, Any],
+    template: Optional[str] = None,
+    job_desc: Optional[str] = None,
+) -> str:
+    """Generate a tailored resume (simple JSON). This is a lightweight placeholder.
+    Provide a profile dict with keys like name, skills, experience. Optionally include job_desc.
+    Returns a JSON string with a 'text' field containing a simple Markdown resume.
+    """
+    name = profile.get("name", "Candidate")
+    skills = ", ".join(profile.get("skills", [])) if isinstance(profile.get("skills"), list) else str(profile.get("skills", ""))
+    summary = profile.get("summary", "")
+    md = f"# {name}\n\n## Summary\n{summary}\n\n## Skills\n{skills}\n\n"
+    return json.dumps({"text": md})
 
-    def _create_agent_executor(self):
-        # Add the StdOutCallbackHandler to the callbacks list
-        return AgentExecutor(
-            agent=self.agent,
-            tools=self.tools,
-            verbose=True,
-            callbacks=[StdOutCallbackHandler()]
-        )
 
-    def run(self, prompt: str):
-        return self.agent_executor.invoke({"input": prompt})
+career_agent = Agent(
+    name="CareerAssistant",
+    instructions=(
+        "You are a helpful career copilot. When the user asks for jobs, call job_scraper with appropriate "
+        "filters. When the user wants a resume, call resume_generator. Prefer concise JSON for structured "
+        "lists (e.g., jobs). If providing a final answer, begin with 'Final Answer:' before the user-facing summary."
+    ),
+    tools=[job_scraper, resume_generator],
+)
+
+session = SQLiteSession("career_copilot_session")
+
+
+async def handle_user_message(user_text: str) -> str:
+    result = await Runner.run(
+        career_agent,
+        user_text,
+        session=session,
+        run_config={"model": "gpt-4.1"},
+    )
+    return result.final_output
