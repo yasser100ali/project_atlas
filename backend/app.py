@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from .utils.prompt import ClientMessage
-from .agents.career_copilot import handle_user_message
+from .agents.orchestrator import handle_user_message
 
 load_dotenv(".env")
 
@@ -26,7 +26,15 @@ async def handle_chat_data(request: Request):
         return JSONResponse(content={"error": "No messages provided"}, status_code=400)
     
     user_message = request.messages[-1].content
+    print(f"User message: {user_message}")
 
     # Run the OpenAI Agent
-    final_response = await handle_user_message(user_message)
-    return JSONResponse(content={"response": final_response})
+    try:
+        final_response = await handle_user_message(user_message)
+        print("Agent final response:\n" + str(final_response))
+        return JSONResponse(content={"response": final_response})
+    except Exception as e:
+        import traceback
+        print("Error while handling chat:", e)
+        print(traceback.format_exc())
+        return JSONResponse(content={"error": str(e)}, status_code=500)

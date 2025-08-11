@@ -3,7 +3,7 @@ from typing import Type, Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 import json
 from agents import function_tool  # type: ignore
-from ..utils.tools import search_jobs
+from ..utils.tools.search_job import search_jobs
 
 
 class JobScraperInput(BaseModel):

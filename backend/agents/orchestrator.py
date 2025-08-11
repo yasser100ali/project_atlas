@@ -1,51 +1,30 @@
 import asyncio
 import json
-from typing import Optional, List, Literal, Dict, Any
+from typing import Optional, List
+from pydantic import BaseModel
 
 from dotenv import load_dotenv
 
 # OpenAI Agents SDK
 from agents import Agent, Runner, SQLiteSession, function_tool  # type: ignore
 
-# Local utilities
-from ..utils.tools import search_jobs
+from .job_scraper import job_scraper
 
 load_dotenv()
 
 
-@function_tool(name_override="job_scraper")
-async def job_scraper(
-    query: str,
-    location: str = "San Francisco, California, United States",
-    pages: int = 1,
-    date_posted: Optional[str] = None,
-    remote_only: bool = False,
-    employment_types: Optional[List[str]] = None,
-    salary_min: Optional[float] = None,
-    salary_max: Optional[float] = None,
-    salary_currency: Optional[str] = None,
-    extra: Optional[Dict[str, Any]] = None,
-    top_k: int = 10,
-) -> str:
-    """Search for jobs using JSearch with optional filters. Return a JSON string list of jobs."""
-    jobs = search_jobs(
-        query=query,
-        location=location,
-        pages=pages,
-        date_posted=date_posted,
-        remote_only=remote_only,
-        employment_types=employment_types,
-        salary_min=salary_min,
-        salary_max=salary_max,
-        salary_currency=salary_currency,
-        extra=extra,
-    ) or []
-    return json.dumps(jobs[: max(1, top_k)])
+# `job_scraper` tool is imported from `.job_scraper`
+
+
+class ResumeProfile(BaseModel):
+    name: Optional[str] = None
+    skills: Optional[List[str]] = None
+    summary: Optional[str] = None
 
 
 @function_tool(name_override="resume_generator")
 def resume_generator(
-    profile: Dict[str, Any],
+    profile: ResumeProfile,
     template: Optional[str] = None,
     job_desc: Optional[str] = None,
 ) -> str:
@@ -53,9 +32,9 @@ def resume_generator(
     Provide a profile dict with keys like name, skills, experience. Optionally include job_desc.
     Returns a JSON string with a 'text' field containing a simple Markdown resume.
     """
-    name = profile.get("name", "Candidate")
-    skills = ", ".join(profile.get("skills", [])) if isinstance(profile.get("skills"), list) else str(profile.get("skills", ""))
-    summary = profile.get("summary", "")
+    name = profile.name or "Candidate"
+    skills = ", ".join(profile.skills) if isinstance(profile.skills, list) else ""
+    summary = profile.summary or ""
     md = f"# {name}\n\n## Summary\n{summary}\n\n## Skills\n{skills}\n\n"
     return json.dumps({"text": md})
 
@@ -74,6 +53,7 @@ session = SQLiteSession("career_copilot_session")
 
 
 async def handle_user_message(user_text: str) -> str:
+    print(f"[orchestrator] Running agent with user_text: {user_text}")
     result = await Runner.run(
         career_agent,
         user_text,
@@ -81,4 +61,5 @@ async def handle_user_message(user_text: str) -> str:
         # Use default model; can set via env if needed
         run_config=None,
     )
+    print("[orchestrator] Agent final_output:\n" + str(result.final_output))
     return result.final_output
