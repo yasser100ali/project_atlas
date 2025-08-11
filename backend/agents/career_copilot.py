@@ -78,6 +78,7 @@ async def handle_user_message(user_text: str) -> str:
         career_agent,
         user_text,
         session=session,
-        run_config={"model": "gpt-4.1"},
+        # Use default model; can set via env if needed
+        run_config=None,
     )
     return result.final_output

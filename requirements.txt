@@ -5,9 +5,5 @@ pydantic
 python-multipart
 requests
 PyYAML
-
-# OpenAI Agents SDK
 openai-agents
-
-# PDF processing
 pypdf
