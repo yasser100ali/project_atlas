@@ -1,0 +1,65 @@
+cv:
+  name: Yasser Ali
+  location: Southern California, USA
+  email: yasser100ali@gmail.com
+  social_networks:
+    - network: LinkedIn
+      username: yasser-a-a7146795
+    - network: GitHub
+      username: yasser100ali
+  sections:
+    summary:
+      - "Self-taught AI Engineer and data scientist with an applied mathematics foundation."
+      - "Builds agentic systems end-to-end: planning, orchestration, tools, evaluation, and deployment."
+      - "Experience across computer vision and analytics; strong in Python, R, SQL, and data visualization."
+      - "Seeking AI Engineering/Data Science roles delivering measurable impact."
+    experience:
+      - company: Kaiser Permanente
+        position: Data Scientist
+        start_date: 2024-11
+        end_date: present
+        location: Pasadena, CA
+        highlights:
+          - "Built a full-stack Data Analyst AI Agent that served as the primary team funding project for an innovation team."
+          - ">7,000 lines of code; built the entire agentic system from scratch (planning, orchestration, tools, evaluation, and deployment)."
+          - "Integrated with enterprise data sources and automated E2E analysis-to-reporting workflows."
+      - company: Kaiser Permanente
+        position: Data Analyst Intern
+        location: Pasadena, CA
+        highlights:
+          - "Authored complex SQL to analyze patient/surgery/medication datasets and built interactive Power BI dashboards."
+          - "Automated repetitive workflows using UiPath RPA, reducing manual effort and improving data quality."
+          - "Collaborated with clinicians on exploratory analyses to inform operational decisions."
+    projects:
+      - name: CareerCopilot — Founder
+        summary: "Full platform that helps job seekers enhance resumes, find matching roles, auto-apply, and take technical tests."
+        highlights:
+          - "Designed multi-agent workflow for resume parsing, job matching, application automation, and test delivery."
+          - "Built MVP and initial traction; currently in the process of securing funding."
+      - name: Convolutional Neural Network Image Classifiers
+        summary: "Fine-tuned pre-trained CNNs for image classification tasks."
+        highlights:
+          - "Achieved 96.2% accuracy on Cats vs. Dogs via transfer learning and 99.3% on MNIST."
+          - "Repo: https://github.com/yasser100ali/computer_vision_using_CNN"
+    education:
+      - institution: University of California, Santa Barbara
+        degree: B.S. Applied Mathematics
+        start_date: 2019-09
+        end_date: 2023-06
+        location: Santa Barbara, CA
+        highlights:
+          - "Applied linear algebra techniques (e.g., SVD) to build predictive models."
+          - "Explored numerical analysis and optimization for solving computational problems."
+    skills:
+      - label: Programming
+        details: "Python, R, SQL, C#"
+      - label: ML/AI
+        details: "CNNs, Transformers, scikit-learn, TensorFlow, PyTorch"
+      - label: Data
+        details: "Pandas, NumPy, ETL, Data visualization, Power BI"
+      - label: AI Engineering
+        details: "Agents, Orchestration, Evaluation, Deployment, Docker"
+      - label: Tools
+        details: "HuggingFace, Keras, Git, UiPath"
+design:
+  theme: sb2nov

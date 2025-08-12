@@ -9,3 +9,5 @@ PyYAML
 # Agents SDK (provides `agents` package). Latest available on PyPI is 0.2.6.
 openai-agents==0.2.6
 pypdf
+
+rendercv[full]

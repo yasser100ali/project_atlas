@@ -40,6 +40,7 @@ career_agent = Agent(
         "- If the information is insufficient for either task, ask concise follow-up questions to gather the missing details.\n"
         "If providing a final answer, begin with 'Final Answer:' before the user-facing summary."
     ),
+    model="gpt-5",
     tools=[job_scraper, resume_builder],
 )
 

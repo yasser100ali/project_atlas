@@ -1,11 +1,13 @@
 # agents/resume_agent.py
 from agents import Agent, ModelSettings
 from ..utils.tools.resume_generation import rendercv_render  # your @function_tool from earlier
+from dotenv import load_dotenv
+
+load_dotenv()
 
 resume_agent = Agent(
     name="ResumeAgent",
-    model="gpt-4o",
-    model_settings=ModelSettings(temperature=0.1),
+    model="gpt-5",
     tools=[rendercv_render],
     tool_use_behavior="stop_on_first_tool",  # use the tool's output as the final answer
     instructions="""

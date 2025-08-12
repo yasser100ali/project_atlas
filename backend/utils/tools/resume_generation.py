@@ -27,8 +27,11 @@ def rendercv_render(
     loaded_yaml = None
     try:
         loaded_yaml = yaml.safe_load(yaml_str)
+        print(f"Safely looaded yaml string: \n{yaml_str}\n")
+
     except Exception:
         loaded_yaml = None
+        print("Loaded yaml failed.")
 
     name = "Resume"
     if isinstance(loaded_yaml, dict):
