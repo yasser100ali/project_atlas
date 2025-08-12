@@ -1,9 +1,11 @@
 fastapi
 python-dotenv
-openai
+# Pin to a recent OpenAI SDK that includes `openai.types.responses`
+openai>=1.45.0
 pydantic
 python-multipart
 requests
 PyYAML
-openai-agents
+# Agents SDK (provides `agents` package). Latest available on PyPI is 0.2.6.
+openai-agents==0.2.6
 pypdf
