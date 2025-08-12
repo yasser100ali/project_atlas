@@ -53,12 +53,25 @@ def rendercv_render(
         tmp.close()
         yaml_path = tmp.name
 
-    # Render to run_dir; RenderCV typically names <Name_With_Underscores>_CV.pdf
+    # Render to run_dir
     cmd = f'rendercv render "{yaml_path}" -o "{run_dir}"'
     proc = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True)
 
-    filename = f"{_slug(name)}_CV.pdf"
-    pdf_path = os.path.join(run_dir, filename)
+    # filename = f"{_slug(name)}_CV.pdf"
+    # pdf_path = os.path.join(run_dir, filename)
+
+    # Try the common default name first, then fall back to any PDF in the folder
+    expected_filename = f"{_slug(name)}_CV.pdf"
+    pdf_path = os.path.join(run_dir, expected_filename)
+    if not os.path.exists(pdf_path):
+        # Discover any pdf produced in the run_dir
+        try:
+            pdf_candidates = [f for f in os.listdir(run_dir) if f.lower().endswith(".pdf")]
+            if pdf_candidates:
+                expected_filename = pdf_candidates[0]
+                pdf_path = os.path.join(run_dir, expected_filename)
+        except Exception:
+            pass
 
     pdf_b64 = ""
     if proc.returncode == 0 and os.path.exists(pdf_path):
@@ -75,7 +88,8 @@ def rendercv_render(
         "pdf_path": pdf_path if os.path.exists(pdf_path) else None,
         "pdf_b64": pdf_b64,
         "output_folder": run_dir,
-        "filename": filename,
+        # "filename": filename,
+        "filename": expected_filename,
         "stdout": proc.stdout.strip(),
         "stderr": proc.stderr.strip(),
         "returncode": proc.returncode,

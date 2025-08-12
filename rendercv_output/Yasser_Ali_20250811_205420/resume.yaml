@@ -1,0 +1,71 @@
+cv:
+  name: Yasser Ali
+  location: Southern California, USA
+  email: yasser100ali@gmail.com
+  social_networks:
+    - network: LinkedIn
+      username: yasser-a-a7146795
+    - network: GitHub
+      username: yasser100ali
+  sections:
+    summary:
+      - "Data scientist with a strong background in applied mathematics."
+      - "Specializes in linear algebra, numerical analysis, and ML models."
+      - "Skilled in Python, R, SQL, and data visualization."
+    experience:
+      - company: Kaiser Permanente
+        position: Data Science Engineer
+        start_date: 2024-11
+        end_date: present
+        location: Pasadena, CA
+        highlights:
+          - "Built a full stack Data Analyst AI Agent with 7000+ lines of code."
+          - "Led innovation team project, self-taught AI Engineer."
+      - company: Kaiser Permanente
+        position: Data Analyst Intern
+        start_date: 2023-06
+        end_date: 2024-10
+        location: Pasadena, CA
+        highlights:
+          - "Developed CNN for X-ray abnormality detection, improving diagnostics."
+          - "Created SQL queries and PowerBI reports, automated tasks with UIPath."
+    education:
+      - institution: University of California, Santa Barbara
+        degree: B.S. Applied Mathematics
+        start_date: 2019-09
+        end_date: 2023-06
+        location: Santa Barbara, CA
+        highlights:
+          - "Applied linear algebra for predictive analytics models."
+          - "Explored numerical analysis for complex equations."
+    projects:
+      - name: CareerCopilot
+        start_date: 2023-07
+        end_date: present
+        summary: "Platform to enhance resumes, find jobs, and provide technical tests."
+        highlights:
+          - "Developed platform, currently securing funding."
+      - name: X-Ray Abnormality Detection
+        start_date: 2023-01
+        end_date: 2023-12
+        summary: "CNN for detecting abnormalities in X-ray images."
+        highlights:
+          - "Preprocessed large dataset, ensemble ML methods for accuracy."
+      - name: CNN Image Classifiers
+        start_date: 2022-01
+        end_date: 2022-12
+        summary: "Fine-tuned models for image classification."
+        highlights:
+          - "Achieved 96.2% accuracy in cats vs. dogs classification."
+          - "Achieved 99.3% accuracy on MNIST digit classifier."
+    skills:
+      - label: Programming
+        details: "Python, R, SQL, C#"
+      - label: Frameworks
+        details: "Keras, TensorFlow, PyTorch, Sci-Kit Learn"
+      - label: Tools
+        details: "PowerBI, UiPath"
+      - label: Machine Learning
+        details: "CNNs, Transfer Learning, Ensemble Methods"
+design:
+  theme: sb2nov
