@@ -61,7 +61,7 @@ export function MultimodalInput({
     event?: {
       preventDefault?: () => void;
     },
-    chatRequestOptions?: ChatRequestOptions,
+    opts?: { contentOverride?: string; data?: any },
   ) => void;
   className?: string;
 }) {
@@ -242,10 +242,9 @@ export function MultimodalInput({
             >
               <Button
                 variant="ghost"
-                onClick={async () => {
-                  append({
-                    role: "user",
-                    content: suggestedAction.action,
+                onClick={() => {
+                  handleSubmit?.(undefined, {
+                    contentOverride: suggestedAction.action,
                   });
                 }}
                 className="text-left border rounded-xl px-4 py-3.5 text-sm flex-1 gap-1 sm:flex-col w-full h-auto justify-start items-start"

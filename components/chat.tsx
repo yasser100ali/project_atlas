@@ -38,16 +38,21 @@ export function Chat() {
 
   const handleSubmit = async (
     _event?: { preventDefault?: () => void },
-    chatRequestOptions?: { data?: any },
+    chatRequestOptions?: { contentOverride?: string; data?: any },
   ) => {
-    if (!input.trim()) return;
-    // capture current input and clear immediately so the textbox empties right after submit
-    const currentInput = input;
+    const override = chatRequestOptions?.contentOverride;
+    const contentToSend =
+      typeof override === "string" && override.trim().length > 0
+        ? override
+        : input;
+
+    if (!contentToSend.trim()) return;
+    // clear input immediately (for UI) if we were using it
     setInput("");
     const userMessage: Message = {
       id: `${Date.now()}`,
       role: "user",
-      content: currentInput,
+      content: contentToSend,
     } as Message;
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
@@ -57,7 +62,7 @@ export function Chat() {
     const requestBody = {
       messages: [
         ...messages.map((m) => ({ role: m.role as Role, content: String(m.content) })),
-        { role: "user" as Role, content: currentInput },
+        { role: "user" as Role, content: contentToSend },
       ],
       data: { attachments },
     };
