@@ -7,26 +7,9 @@ from dotenv import load_dotenv
 from agents import Agent, Runner, SQLiteSession, function_tool  # type: ignore
 
 from .job_scraper import job_scraper
-from .resume_agent import resume_agent
+from .resume_agent import resume_agent, resume_builder
 
 load_dotenv()
-
-
-# `job_scraper` tool is imported from `.job_scraper`
-
-
-@function_tool(name_override="resume_builder")
-async def resume_builder(input_text: str) -> str:
-    """Delegate to the specialized resume agent. Pass the full input text, which may include
-    user's instructions, extracted PDF content, and optionally a job description. Returns the
-    resume agent's final output (typically JSON from rendercv_render)."""
-    result = await Runner.run(
-        resume_agent,
-        input_text,
-        session=session,
-        run_config=None,
-    )
-    return result.final_output
 
 
 career_agent = Agent(
@@ -40,7 +23,7 @@ career_agent = Agent(
         "- If the information is insufficient for either task, ask concise follow-up questions to gather the missing details.\n"
         "If providing a final answer, begin with 'Final Answer:' before the user-facing summary."
     ),
-    model="gpt-5",
+    model="gpt-4.1",
     tools=[job_scraper, resume_builder],
 )
 
@@ -55,5 +38,4 @@ async def handle_user_message(user_text: str) -> str:
         session=session,
         run_config=None,
     )
-    print("[orchestrator] Agent final_output:\n" + str(result.final_output))
     return result.final_output

@@ -8,9 +8,9 @@ def _slug(s: str) -> str:
 
 @function_tool
 def rendercv_render(
-    yaml_str: str,
-    out_root: str = "rendercv_output",
-    persist_yaml: bool = True
+	yaml_str: str,
+	out_root: Optional[str] = None,
+	persist_yaml: bool = True
 ) -> str:
     """
     Persist YAML (optional), run `rendercv render`, and return JSON:
@@ -21,13 +21,18 @@ def rendercv_render(
       - filename: expected PDF filename
       - output_folder: folder where the PDF was written
     """
+    # Resolve project root (apex_v2) and default output directory
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+    if out_root is None:
+        out_root = os.path.join(project_root, "generated_resumes")
+
     os.makedirs(out_root, exist_ok=True)
 
     # Name & folder
     loaded_yaml = None
     try:
         loaded_yaml = yaml.safe_load(yaml_str)
-        print(f"Safely looaded yaml string: \n{yaml_str}\n")
+        print(f"Safely loaded yaml string:\n{yaml_str}\n")
 
     except Exception:
         loaded_yaml = None
@@ -56,9 +61,18 @@ def rendercv_render(
         tmp.close()
         yaml_path = tmp.name
 
-    # Render to run_dir
-    cmd = f'rendercv render "{yaml_path}" -o "{run_dir}"'
-    proc = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True)
+    # Use absolute paths for CLI call
+    yaml_path = os.path.abspath(yaml_path)
+    run_dir = os.path.abspath(run_dir)
+
+    # Render to run_dir using direct invocation (no shell)
+    proc = subprocess.run([
+        "rendercv",
+        "render",
+        yaml_path,
+        "-o",
+        run_dir,
+    ], capture_output=True, text=True)
 
     # filename = f"{_slug(name)}_CV.pdf"
     # pdf_path = os.path.join(run_dir, filename)
@@ -67,12 +81,19 @@ def rendercv_render(
     expected_filename = f"{_slug(name)}_CV.pdf"
     pdf_path = os.path.join(run_dir, expected_filename)
     if not os.path.exists(pdf_path):
-        # Discover any pdf produced in the run_dir
+        # Discover any PDF produced in run_dir (search recursively)
         try:
-            pdf_candidates = [f for f in os.listdir(run_dir) if f.lower().endswith(".pdf")]
-            if pdf_candidates:
-                expected_filename = pdf_candidates[0]
-                pdf_path = os.path.join(run_dir, expected_filename)
+            found_pdf = None
+            for root, _dirs, files in os.walk(run_dir):
+                for f in files:
+                    if f.lower().endswith(".pdf"):
+                        found_pdf = os.path.join(root, f)
+                        break
+                if found_pdf:
+                    break
+            if found_pdf:
+                pdf_path = found_pdf
+                expected_filename = os.path.basename(found_pdf)
         except Exception:
             pass
 
