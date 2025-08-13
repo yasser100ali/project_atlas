@@ -1,0 +1,68 @@
+cv:
+  name: James Bond
+  location: Southern California, USA
+  email: james.bond@email.com
+  social_networks:
+    - network: LinkedIn
+      username: jamesbond
+    - network: GitHub
+      username: jamesbond
+  sections:
+    summary:
+      - "Data scientist with a strong background in applied mathematics and linear algebra."
+      - "Self-taught AI Engineer with hands-on experience in modern ML techniques."
+      - "Skilled in Python, R, SQL, and data visualization for real-world applications."
+      - "Extensive experience building and deploying end-to-end ML and AI agent systems."
+    experience:
+      - company: Kaiser Permanente
+        position: Data Analyst Intern
+        start_date: 2024-06
+        end_date: 2024-09
+        location: Pasadena, CA
+        highlights:
+          - "Developed process automations (UiPath) and patient data analysis to improve clinical insights."
+          - "Authored SQL queries and PowerBI reports, boosting analytics capacity for the team by 30%."
+    education:
+      - institution: University of California, Santa Barbara
+        area: Applied Mathematics
+        study_type: B.S.
+        start_date: 2019-09
+        end_date: 2023-06
+        location: California, USA
+        highlights:
+          - "Focused coursework: linear algebra, numerical analysis, predictive analytics."
+    projects:
+      - name: Data Analyst AI Agent for Kaiser Permanente
+        start_date: 2024-11
+        end_date: present
+        summary: "Developed a full-stack AI data analyst agent adopted as a key project by Kaiser Permanente's innovation team."
+        highlights:
+          - "Designed agentic system (>7000 LOC) from scratch using Python, automating data analysis workflows."
+          - "Improved reporting efficiency and technical standards across the innovation team."
+      - name: CareerCopilot Platform
+        start_date: 2024-05
+        end_date: present
+        summary: "Founded a platform streamlining job searches with resume analysis, job matching, and technical tests."
+        highlights:
+          - "Built all platform features; currently in funding process and seeking seed investment."
+          - "Automated resume optimization and job application workflows for users."
+      - name: CNN Image Classifiers
+        start_date: 2023-10
+        end_date: 2024-02
+        summary: "Fine-tuned pre-trained models for image classification; implemented advanced transfer learning."
+        highlights:
+          - "Achieved 96.2% accuracy (cats vs. dogs) and 99.3% on MNIST (near state-of-the-art)."
+          - "Published project and code: github.com/jamesbond/computer_vision_using_CNN."
+    skills:
+      - label: Programming Languages
+        details: "Python (Native), SQL (Proficient), R (Advanced), C# (Intermediate)"
+      - label: ML Frameworks & Libraries
+        details: "Keras, TensorFlow, HuggingFace, PyTorch, Scikit-Learn"
+      - label: Data Analytics
+        details: "PowerBI, UiPath, SQL, automation"
+      - label: Applied Math
+        details: "Linear algebra, numerical analysis, predictive analytics"
+      - label: AI Systems
+        details: "End-to-end ML, agent systems, workflow automation"
+design:
+  theme: sb2nov

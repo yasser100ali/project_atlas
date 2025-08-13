@@ -10,7 +10,9 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pypdf import PdfReader
 from .utils.prompt import ClientMessage
 from .utils.attachment import Attachment
-from .agents.orchestrator import handle_user_message
+from .agents.orchestrator import career_agent, session
+from agents import Runner, ItemHelpers  # type: ignore
+from openai.types.responses import ResponseTextDeltaEvent  # type: ignore
 
 load_dotenv(".env")
 
@@ -64,34 +66,71 @@ async def handle_chat_data(request: Request):
 
     async def ndjson_stream():
         try:
-            # Initial thinking hint
             yield json.dumps({"event": "thinking", "data": "Starting agent..."}) + "\n"
 
-            import asyncio
-            queue: asyncio.Queue = asyncio.Queue()
+            result = Runner.run_streamed(
+                career_agent,
+                input=combined_text,
+                session=session,
+            )
 
-            async def on_event(event_type, data):
-                # forward tool/attempt events as thinking lines
-                payload = {"event": "thinking", "data": {"type": event_type, **(data or {})}}
-                await queue.put(json.dumps(payload) + "\n")
+            accumulated_text = ""
 
-            # Run agent concurrently while flushing queue
-            done = False
+            async for event in result.stream_events():
+                # Stream raw token deltas as progressively growing final content
+                if event.type == "raw_response_event" and isinstance(event.data, ResponseTextDeltaEvent):
+                    delta = event.data.delta or ""
+                    if delta:
+                        accumulated_text += delta
+                        yield json.dumps({"event": "final", "response": accumulated_text}) + "\n"
+                    continue
 
-            async def run_agent():
-                final = await handle_user_message(combined_text, on_event=on_event)
-                await queue.put(json.dumps({"event": "final", "response": final}) + "\n")
-                return
+                # Agent switched/updated
+                if event.type == "agent_updated_stream_event":
+                    payload = {
+                        "event": "thinking",
+                        "data": {"type": "agent_updated", "new_agent": event.new_agent.name},
+                    }
+                    yield json.dumps(payload) + "\n"
+                    continue
 
-            task = asyncio.create_task(run_agent())
-            while not task.done() or not queue.empty():
-                try:
-                    line = await asyncio.wait_for(queue.get(), timeout=0.2)
-                    yield line
-                except asyncio.TimeoutError:
-                    await asyncio.sleep(0.05)
-            # ensure any exception is raised
-            await task
+                # High-level run item events
+                if event.type == "run_item_stream_event":
+                    if event.item.type == "tool_call_item":
+                        # try to extract a readable tool name
+                        tool_name = (
+                            getattr(event.item, "tool_name", None)
+                            or getattr(getattr(event.item, "tool", None), "name", None)
+                            or getattr(getattr(event.item, "tool_call", None), "name", None)
+                            or "unknown_tool"
+                        )
+                        yield json.dumps({
+                            "event": "thinking",
+                            "data": {"type": "tool_call", "tool": tool_name},
+                        }) + "\n"
+                    elif event.item.type == "tool_call_output_item":
+                        # do not forward full tool outputs (can be huge). Only signal completion
+                        tool_name = (
+                            getattr(event.item, "tool_name", None)
+                            or getattr(getattr(event.item, "tool", None), "name", None)
+                            or getattr(getattr(event.item, "tool_call", None), "name", None)
+                            or "unknown_tool"
+                        )
+                        yield json.dumps({
+                            "event": "thinking",
+                            "data": {"type": "tool_output", "tool": tool_name, "status": "completed"},
+                        }) + "\n"
+                    elif event.item.type == "message_output_item":
+                        # Optional: show completed message chunks at item level
+                        text = ItemHelpers.text_message_output(event.item) or ""
+                        # keep this concise for the Thinking panel
+                        snippet = (text[:200] + ("..." if len(text) > 200 else "")) if text else ""
+                        if snippet:
+                            yield json.dumps({
+                                "event": "thinking",
+                                "data": {"type": "message_output", "text": snippet},
+                            }) + "\n"
+                    continue
         except Exception as e:
             import traceback
             err = {"event": "error", "message": str(e), "trace": traceback.format_exc()[:2000]}

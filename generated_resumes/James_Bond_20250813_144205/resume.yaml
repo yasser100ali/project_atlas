@@ -1,0 +1,74 @@
+cv:
+  name: James Bond
+  location: Southern California, USA
+  email: james.bond@gmail.com
+  social_networks:
+    - network: LinkedIn
+      username: james-bond-ds
+    - network: GitHub
+      username: jamesbond
+  sections:
+    summary:
+      - "Data scientist and AI engineer with strong applied mathematics background."
+      - "Skilled in Python, R, SQL, and data visualization; focus on ML systems from scratch."
+      - "Specializes in building advanced agentic and machine learning systems."
+      - "Experienced in large-scale projects with end-to-end system design."
+    experience:
+      - company: Kaiser Permanente
+        position: Data Scientist, Innovation Team
+        start_date: 2024-11
+        end_date: present
+        location: Pasadena, CA
+        highlights:
+          - "Led design/development of >7000-line Data Analyst AI Agent driving innovation funding."
+          - "Built agentic system architecture with data analytics, ML workflows, and automation."
+          - "Streamlined team processes, delivering measurable business impact."
+      - company: Kaiser Permanente
+        position: Data Analyst Intern
+        start_date: 2023-06
+        end_date: 2023-09
+        location: Pasadena, CA
+        highlights:
+          - "Created SQL queries and PowerBI dashboards for analytics reporting."
+          - "Developed CNN for X-ray abnormality detection, providing diagnostic insights."
+          - "Automated workflows with UIPath RPA for operational efficiency."
+    education:
+      - institution: University of California, Santa Barbara
+        area: Applied Mathematics
+        study_type: B.S.
+        start_date: 2019-09
+        end_date: 2023-06
+        location: Santa Barbara, CA
+        highlights:
+          - "Applied SVD and linear algebra techniques for predictive analytics."
+          - "Studied numerical analysis and computational optimization methods."
+    projects:
+      - name: CareerCopilot
+        start_date: 2024-02
+        end_date: present
+        summary: "Comprehensive career platform for job seekers, enabling resume enhancement, job matching, and tech tests."
+        highlights:
+          - "Founded and led platform design/architecture; implemented end-to-end features."
+          - "Built automated job matching, technical test modules, and applicant tracking."
+      - name: Convolutional Neural Network Image Classifiers
+        start_date: 2023-10
+        end_date: 2024-02
+        summary: "Developed and fine-tuned image classifiers with transfer learning and state-of-the-art accuracy."
+        highlights:
+          - "Achieved 96.2% accuracy in dog vs. cat classification with transfer learning."
+          - "Reached 99.3% accuracy for MNIST digit classification (top-tier performance)."
+    skills:
+      - label: Programming
+        details: "Python (native), R (advanced), SQL (proficient), C# (intermediate)"
+      - label: ML/AI Development
+        details: "Keras, TensorFlow, PyTorch, Sci-Kit Learn, HuggingFace"
+      - label: Data Visualization
+        details: "PowerBI, matplotlib, seaborn"
+      - label: Automation & RPA
+        details: "UiPath, automated pipelines, workflow design"
+      - label: Analytics
+        details: "Predictive modeling, optimization, business impact analysis"
+      - label: System Design
+        details: "Agentic systems, platform architecture, integration"
+design:
+  theme: sb2nov

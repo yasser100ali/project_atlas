@@ -37,6 +37,17 @@ export const PreviewMessage = ({
         )}
 
         <div className="flex flex-col gap-2 w-full">
+          {thinkingLogs && thinkingLogs.length > 0 && (
+            <details className="rounded-md border p-3 bg-muted/50">
+              <summary className="cursor-pointer text-sm text-muted-foreground">Thinking</summary>
+              <div className="mt-2 flex flex-col gap-2 text-xs text-muted-foreground whitespace-pre-wrap">
+                {thinkingLogs.map((log, idx) => (
+                  <div key={idx}>{log}</div>
+                ))}
+              </div>
+            </details>
+          )}
+
           {message.content && (
             <div className="flex flex-col gap-4">
               <Markdown>{message.content as string}</Markdown>
@@ -75,16 +86,7 @@ export const PreviewMessage = ({
             </div>
           )}
 
-          {thinkingLogs && thinkingLogs.length > 0 && (
-            <details className="rounded-md border p-3 bg-muted/50">
-              <summary className="cursor-pointer text-sm text-muted-foreground">Thinking</summary>
-              <div className="mt-2 flex flex-col gap-2 text-xs text-muted-foreground whitespace-pre-wrap">
-                {thinkingLogs.map((log, idx) => (
-                  <div key={idx}>{log}</div>
-                ))}
-              </div>
-            </details>
-          )}
+          
 
           {message.experimental_attachments && (
             <div className="flex flex-row gap-2">

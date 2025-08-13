@@ -102,11 +102,10 @@ WORKFLOW
 )
 
 
-# Deterministic resume builder tool with retries, colocated with the resume agent
 @function_tool(name_override="resume_builder")
 async def resume_builder(input_text: str) -> str:
-    """Run the resume agent with up to 3 attempts, repairing YAML based on RenderCV errors.
-
+    """
+    Run the resume agent with up to 3 attempts, repairing YAML based on RenderCV errors.
     Returns the final tool output from `rendercv_render` (JSON string).
     """
     session = SQLiteSession("career_copilot_session")
@@ -114,17 +113,15 @@ async def resume_builder(input_text: str) -> str:
     last_output = ""
     error_feedback = ""
 
-    for attempt in range(max_attempts):
-        augmented_input = input_text
-        if error_feedback:
-            augmented_input = (
-                f"{input_text}\n\nRENDER_ERROR_FEEDBACK:\n{error_feedback}\n"
-                "Please correct the YAML according to the error feedback above and call the render tool again."
-            )
+    for attempt in range(1, max_attempts + 1):
+        augmented_input = input_text if not error_feedback else (
+            f"{input_text}\n\nRENDER_ERROR_FEEDBACK:\n{error_feedback}\n"
+            "Please correct the YAML according to the error feedback above and call the render tool again."
+        )
 
-        print(f"[resume_builder] Attempt {attempt + 1} starting")
-        await _emit("attempt_start", {"attempt": attempt + 1})
+        print(f"[resume_builder] Attempt {attempt} starting")
 
+        # No streaming needed inside this subagent
         result = await Runner.run(
             resume_agent,
             augmented_input,
@@ -132,11 +129,10 @@ async def resume_builder(input_text: str) -> str:
             run_config=None,
         )
 
-        last_output = result.final_output
-        print(f"[resume_builder] Attempt {attempt + 1} tool output length={len(str(last_output))}")
+        last_output = result.final_output or ""
+        print(f"[resume_builder] Attempt {attempt} tool output length={len(last_output)}")
 
-        # Parse the tool output from rendercv_render
-        parsed = None
+        # Parse tool output (rendercv_render returns JSON string)
         try:
             parsed = json.loads(last_output)
         except Exception:
@@ -144,8 +140,7 @@ async def resume_builder(input_text: str) -> str:
                 "The previous output was not valid JSON from rendercv_render. "
                 f"Raw output (truncated): {last_output[:2000]}"
             )
-            print(f"[resume_builder] Attempt {attempt + 1} JSON parse error")
-            await _emit("attempt_fail", {"attempt": attempt + 1, "reason": "json_parse_error"})
+            print(f"[resume_builder] Attempt {attempt} JSON parse error")
             continue
 
         if not isinstance(parsed, dict):
@@ -153,8 +148,7 @@ async def resume_builder(input_text: str) -> str:
                 "The previous output was not a JSON object. "
                 f"Raw output (truncated): {last_output[:2000]}"
             )
-            print(f"[resume_builder] Attempt {attempt + 1} non-dict tool result")
-            await _emit("attempt_fail", {"attempt": attempt + 1, "reason": "non_dict"})
+            print(f"[resume_builder] Attempt {attempt} non-dict tool result")
             continue
 
         returncode = parsed.get("returncode")
@@ -164,8 +158,7 @@ async def resume_builder(input_text: str) -> str:
         stdout = parsed.get("stdout") or ""
 
         if returncode == 0 and (pdf_path or len(pdf_b64) > 0):
-            print(f"[resume_builder] Attempt {attempt + 1} success -> pdf_path={pdf_path}")
-            await _emit("attempt_success", {"attempt": attempt + 1, "pdf_path": pdf_path, "has_pdf_b64": len(pdf_b64) > 0})
+            print(f"[resume_builder] Attempt {attempt} success -> pdf_path={pdf_path}, has_b64={bool(pdf_b64)}")
             return last_output
 
         error_feedback = (
@@ -173,21 +166,7 @@ async def resume_builder(input_text: str) -> str:
             f"stderr (truncated): {stderr[:2000]}\n"
             f"stdout (truncated): {stdout[:2000]}"
         )
-        print(f"[resume_builder] Attempt {attempt + 1} failed: returncode={returncode}")
-        await _emit("attempt_fail", {"attempt": attempt + 1, "returncode": returncode})
+        print(f"[resume_builder] Attempt {attempt} failed: returncode={returncode}")
 
+    # After retries, return last tool output (caller can surface error to user)
     return last_output
-
-# --- Lightweight event plumbing for streaming ---
-_resume_events_handler: Optional[Callable[[str, Dict[str, Any]], Awaitable[None]]] = None
-
-def set_resume_events_handler(handler: Optional[Callable[[str, Dict[str, Any]], Awaitable[None]]]) -> None:
-    global _resume_events_handler
-    _resume_events_handler = handler
-
-async def _emit(event_type: str, data: Dict[str, Any]) -> None:
-    if _resume_events_handler is not None:
-        try:
-            await _resume_events_handler(event_type, data)
-        except Exception:
-            pass
