@@ -41,10 +41,13 @@ export function Chat() {
     chatRequestOptions?: { data?: any },
   ) => {
     if (!input.trim()) return;
+    // capture current input and clear immediately so the textbox empties right after submit
+    const currentInput = input;
+    setInput("");
     const userMessage: Message = {
       id: `${Date.now()}`,
       role: "user",
-      content: input,
+      content: currentInput,
     } as Message;
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
@@ -54,7 +57,7 @@ export function Chat() {
     const requestBody = {
       messages: [
         ...messages.map((m) => ({ role: m.role as Role, content: String(m.content) })),
-        { role: "user" as Role, content: input },
+        { role: "user" as Role, content: currentInput },
       ],
       data: { attachments },
     };
@@ -114,6 +117,7 @@ export function Chat() {
       toast.error(e?.message || "Streaming failed");
     } finally {
       setIsLoading(false);
+      // ensure textbox remains cleared after stream finishes
       setInput("");
     }
   };

@@ -85,6 +85,11 @@ export function MultimodalInput({
       }px`;
     }
   };
+  const resetHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  };
 
   const [localStorageInput, setLocalStorageInput] = useLocalStorage(
     "input",
@@ -106,6 +111,15 @@ export function MultimodalInput({
   useEffect(() => {
     setLocalStorageInput(input);
   }, [input, setLocalStorageInput]);
+
+  // Ensure the textarea shrinks back after external value changes (e.g., clearing on submit)
+  useEffect(() => {
+    if (textareaRef.current) {
+      // reset to auto first to allow shrink
+      textareaRef.current.style.height = "auto";
+    }
+    adjustHeight();
+  }, [input]);
 
   const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(event.target.value);
@@ -180,6 +194,7 @@ export function MultimodalInput({
       });
 
       setLocalStorageInput("");
+      resetHeight();
 
       if (width && width > 768) {
         textareaRef.current?.focus();
