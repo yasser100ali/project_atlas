@@ -10,6 +10,7 @@ resume_agent = Agent(
     name="ResumeAgent",
     model="gpt-4.1",
     tools=[rendercv_render],
+    tool_use_behavior="stop_on_first_tool",
     instructions="""
 You are an expert resume creator using RenderCV.
 

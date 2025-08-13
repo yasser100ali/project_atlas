@@ -10,7 +10,9 @@ def _slug(s: str) -> str:
 def rendercv_render(
 	yaml_str: str,
 	out_root: Optional[str] = None,
-	persist_yaml: bool = True
+	persist_yaml: bool = True,
+	include_pdf_b64: bool = False,
+	max_log_chars: int = 4000,
 ) -> str:
     """
     Persist YAML (optional), run `rendercv render`, and return JSON:
@@ -32,11 +34,11 @@ def rendercv_render(
     loaded_yaml = None
     try:
         loaded_yaml = yaml.safe_load(yaml_str)
-        print(f"Safely loaded yaml string:\n{yaml_str}\n")
+
 
     except Exception:
         loaded_yaml = None
-        print("Loaded yaml failed.")
+       
 
     name = "Resume"
     if isinstance(loaded_yaml, dict):
@@ -98,7 +100,7 @@ def rendercv_render(
             pass
 
     pdf_b64 = ""
-    if proc.returncode == 0 and os.path.exists(pdf_path):
+    if include_pdf_b64 and proc.returncode == 0 and os.path.exists(pdf_path):
         with open(pdf_path, "rb") as f:
             pdf_b64 = base64.b64encode(f.read()).decode("utf-8")
 
@@ -107,14 +109,19 @@ def rendercv_render(
         try: os.remove(yaml_path)
         except Exception: pass
 
+    def _truncate(s: str) -> str:
+        s = (s or "").strip()
+        if max_log_chars and len(s) > max_log_chars:
+            return s[:max_log_chars] + "\n...[truncated]"
+        return s
+
     return json.dumps({
         "yaml_path": yaml_path if persist_yaml else None,
         "pdf_path": pdf_path if os.path.exists(pdf_path) else None,
         "pdf_b64": pdf_b64,
         "output_folder": run_dir,
-        # "filename": filename,
         "filename": expected_filename,
-        "stdout": proc.stdout.strip(),
-        "stderr": proc.stderr.strip(),
+        "stdout": _truncate(proc.stdout),
+        "stderr": _truncate(proc.stderr),
         "returncode": proc.returncode,
     })

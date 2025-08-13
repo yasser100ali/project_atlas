@@ -1,0 +1,65 @@
+cv:
+  name: James Johnson
+  email: jamesjohnson@email.com
+  location: Southern California, CA, USA
+  social_networks:
+    - network: LinkedIn
+      username: james-johnson
+    - network: GitHub
+      username: jamesjohnson-ai
+  sections:
+    summary:
+      - "Data scientist and self-taught AI engineer with strong applied mathematics background."
+      - "Builds and deploys ML/data analytics solutions; expert in Python, R, SQL, visualization."
+      - "Production experience engineering agentic AI systems and business analytics automation."
+    experience:
+      - company: Kaiser Permanente
+        position: Data Analyst Intern
+        start_date: 2023-06
+        end_date: 2023-09
+        location: Pasadena, CA
+        highlights:
+          - "Developed SQL queries and PowerBI dashboards for surgery and med data analysis."
+          - "Built UIPath RPA bots streamlining clinical and admin workflows (30% workload reduction)."
+    education:
+      - institution: University of California, Santa Barbara
+        area: Applied Mathematics
+        study_type: B.S.
+        start_date: 2019-09
+        end_date: 2023-06
+        location: Santa Barbara, CA
+        highlights:
+          - "Specialized in linear algebra, numerical analysis, predictive modeling."
+    projects:
+      - name: Data Analyst AI Agent (Kaiser Permanente)
+        start_date: 2024-11
+        end_date: present
+        summary: "Full-stack agentic AI analytics agent for business analysis and automation."
+        highlights:
+          - "Designed/deployed 7,000+ LOC system: prompt eng, APIs, DB, UI for production analytics."
+      - name: CareerCopilot
+        start_date: 2024-01
+        end_date: present
+        summary: "AI-powered platform for job searching, resume optimization, job matching & assessments."
+        highlights:
+          - "Built vision, launched core features, led funding efforts and partnership building."
+      - name: CNN Image Classifiers
+        start_date: 2023-10
+        end_date: 2024-03
+        summary: "Transfer learning/CNN-based real-world image classifiers (cats vs. dogs, MNIST)."
+        highlights:
+          - "Achieved 96.2% (cats vs. dogs) and 99.3% (MNIST) accuracy, robust deep learning pipeline."
+          - "Repo: github.com/jamesjohnson-ai/computer_vision_using_CNN"
+    skills:
+      - label: Programming
+        details: "Python (Native), SQL (Proficient), R (Advanced), C# (Intermediate)"
+      - label: ML Frameworks
+        details: "TensorFlow, Keras, HuggingFace, PyTorch, Scikit-learn"
+      - label: Data Analytics
+        details: "PowerBI, SQL, Visualization, UIPath"
+      - label: Mathematics
+        details: "Linear algebra, numerical analysis, predictive analytics"
+      - label: AI Systems
+        details: "Agentic AI engineering, end-to-end automation, API design"
+design:
+  theme: sb2nov
