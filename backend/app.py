@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pypdf import PdfReader
 from .utils.prompt import ClientMessage
 from .utils.attachment import Attachment
-from .agents.orchestrator import career_agent, session
+from .agents.orchestrator import career_agent, create_ephemeral_session
 from agents import Runner, ItemHelpers  # type: ignore
 from openai.types.responses import ResponseTextDeltaEvent  # type: ignore
 
@@ -68,11 +68,9 @@ async def handle_chat_data(request: Request):
         try:
             yield json.dumps({"event": "thinking", "data": "Starting agent..."}) + "\n"
 
-            result = Runner.run_streamed(
-                career_agent,
-                input=combined_text,
-                session=session,
-            )
+            # Create a new session per request to avoid accumulating memory across refreshes
+            session = create_ephemeral_session()
+            result = Runner.run_streamed(career_agent, input=combined_text, session=session)
 
             accumulated_text = ""
 

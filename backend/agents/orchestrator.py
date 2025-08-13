@@ -1,5 +1,6 @@
 import asyncio
 import json
+from uuid import uuid4
 
 from dotenv import load_dotenv
 
@@ -27,11 +28,19 @@ career_agent = Agent(
     tools=[job_scraper, resume_builder],
 )
 
-session = SQLiteSession("career_copilot_session")
+def create_ephemeral_session() -> SQLiteSession:
+    """Create a fresh session so no prior memory is included.
+
+    This avoids ballooning token counts across requests and effectively
+    resets memory on each page refresh.
+    """
+    return SQLiteSession(f"career_copilot_session_{uuid4().hex}")
 
 
 async def stream_agent(user_text: str):
-    streamed = Runner.run_streamed(career_agent, input=user_text, session=session)
+    # Fallback streaming helper if needed elsewhere; uses a new session per call
+    ephemeral_session = create_ephemeral_session()
+    streamed = Runner.run_streamed(career_agent, input=user_text, session=ephemeral_session)
 
     async for event in streamed.stream_events():
         yield event 
