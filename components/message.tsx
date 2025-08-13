@@ -11,10 +11,12 @@ import { Weather } from "./weather";
 
 export const PreviewMessage = ({
   message,
+  thinkingLogs,
 }: {
   chatId: string;
   message: Message;
   isLoading: boolean;
+  thinkingLogs?: string[];
 }) => {
   return (
     <motion.div
@@ -71,6 +73,17 @@ export const PreviewMessage = ({
                 );
               })}
             </div>
+          )}
+
+          {thinkingLogs && thinkingLogs.length > 0 && (
+            <details className="rounded-md border p-3 bg-muted/50">
+              <summary className="cursor-pointer text-sm text-muted-foreground">Thinking</summary>
+              <div className="mt-2 flex flex-col gap-2 text-xs text-muted-foreground whitespace-pre-wrap">
+                {thinkingLogs.map((log, idx) => (
+                  <div key={idx}>{log}</div>
+                ))}
+              </div>
+            </details>
           )}
 
           {message.experimental_attachments && (

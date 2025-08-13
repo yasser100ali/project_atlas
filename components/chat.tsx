@@ -1,36 +1,122 @@
 "use client";
 
+import React from "react";
 import { PreviewMessage, ThinkingMessage } from "@/components/message";
 import { MultimodalInput } from "@/components/multimodal-input";
 import { Overview } from "@/components/overview";
 import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
 import { ToolInvocation } from "ai";
-import { useChat } from "ai/react";
+import type { Message, CreateMessage, ChatRequestOptions } from "ai";
+type Role = "user" | "assistant" | "system";
 import { toast } from "sonner";
 
 export function Chat() {
   const chatId = "001";
 
-  const {
-    messages,
-    setMessages,
-    handleSubmit,
-    input,
-    setInput,
-    append,
-    isLoading,
-    stop,
-  } = useChat({
-    api: "/api/chat",
-    maxSteps: 4,
-    onError: (error) => {
-      if (error.message.includes("Too many requests")) {
-        toast.error(
-          "You are sending too many messages. Please try again later.",
-        );
+  const [messages, setMessages] = React.useState<Array<Message>>([]);
+  const [input, setInput] = React.useState("");
+  const [isLoading, setIsLoading] = React.useState(false);
+  const thinkingLogsByIdRef = React.useRef<Record<string, string[]>>({});
+
+  const append = async (
+    message: Message | CreateMessage,
+    _opts?: ChatRequestOptions,
+  ): Promise<string> => {
+    const id = (message as Message).id || `${Date.now()}`;
+    const normalized: Message = {
+      id,
+      role: (message as any).role,
+      content: String((message as any).content ?? ""),
+    } as Message;
+    setMessages((prev) => [...prev, normalized]);
+    return id;
+  };
+
+  const stop = () => {
+    // no-op placeholder
+  };
+
+  const handleSubmit = async (
+    _event?: { preventDefault?: () => void },
+    chatRequestOptions?: { data?: any },
+  ) => {
+    if (!input.trim()) return;
+    const userMessage: Message = {
+      id: `${Date.now()}`,
+      role: "user",
+      content: input,
+    } as Message;
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+
+    const attachments = chatRequestOptions?.data?.attachments || [];
+
+    const requestBody = {
+      messages: [
+        ...messages.map((m) => ({ role: m.role as Role, content: String(m.content) })),
+        { role: "user" as Role, content: input },
+      ],
+      data: { attachments },
+    };
+
+    // Prepare assistant placeholder to attach thinking logs to
+    const assistantId = `${Date.now()}-assistant`;
+    thinkingLogsByIdRef.current[assistantId] = [];
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.body) {
+        throw new Error("No response body");
       }
-    },
-  });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      // Insert assistant placeholder
+      setMessages((prev) => [
+        ...prev,
+        { id: assistantId, role: "assistant", content: "" } as Message,
+      ]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          try {
+            const evt = JSON.parse(trimmed);
+            if (evt.event === "thinking") {
+              const msg = typeof evt.data === "string" ? evt.data : JSON.stringify(evt.data);
+              thinkingLogsByIdRef.current[assistantId].push(msg);
+            } else if (evt.event === "final") {
+              const content = typeof evt.response === "string" ? evt.response : JSON.stringify(evt.response);
+              setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content } : m)));
+            } else if (evt.event === "error") {
+              const errText = evt.message || "Unknown error";
+              setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: `Error: ${errText}` } : m)));
+            }
+          } catch {
+            // ignore bad lines
+          }
+        }
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Streaming failed");
+    } finally {
+      setIsLoading(false);
+      setInput("");
+    }
+  };
 
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
@@ -43,12 +129,13 @@ export function Chat() {
       >
         {messages.length === 0 && <Overview />}
 
-        {messages.map((message, index) => (
+        {messages.map((message: Message, index: number) => (
           <PreviewMessage
             key={message.id}
             chatId={chatId}
             message={message}
             isLoading={isLoading && messages.length - 1 === index}
+            thinkingLogs={thinkingLogsByIdRef.current[message.id]}
           />
         ))}
 

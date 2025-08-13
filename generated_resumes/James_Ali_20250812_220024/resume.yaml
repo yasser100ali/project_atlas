@@ -1,0 +1,77 @@
+cv:
+  name: James Ali
+  email: jamesali100@gmail.com
+  location: Southern California, USA
+  social_networks:
+    - network: LinkedIn
+      username: james-a-a7146795
+    - network: GitHub
+      username: jamesali100
+  sections:
+    summary:
+      - "Data scientist with deep applied mathematics and AI engineering expertise."
+      - "Self-taught specialist in agentic systems, hands-on ML, and numerical analysis."
+      - "Expert in Python, R, SQL, and full ML stack for scalable, impactful projects."
+      - "Experience building production AI and analytics solutions from scratch."
+    experience:
+      - company: Kaiser Permanente
+        position: Data Scientist, Innovation Team
+        start_date: 2024-11
+        end_date: present
+        location: Southern California, CA
+        highlights:
+          - "Delivered full stack Data Analyst AI Agent (7000+ LOC) adopted team-wide."
+          - "Led architecture, engineering, and deployment of production agentic system."
+      - company: Kaiser Permanente
+        position: Data Analyst Intern
+        start_date: 2023-06
+        end_date: 2023-09
+        location: Pasadena, CA
+        highlights:
+          - "Automated analytics workflows using SQL, PowerBI, and UiPath."
+          - "Analyzed patient data on surgery, medication, and outcomes."
+    education:
+      - institution: University of California, Santa Barbara
+        area: Applied Mathematics
+        study_type: B.S.
+        start_date: 2019-09
+        end_date: 2023-06
+        location: Santa Barbara, CA
+        highlights:
+          - "Applied SVD and numerical optimization for predictive analytics."
+          - "Coursework: numerical methods, optimization, linear algebra."
+    projects:
+      - name: Full Stack Data Analyst AI Agent
+        start_date: 2024-11
+        end_date: present
+        summary: "Production agentic AI system deployed on Kaiser innovation team."
+        highlights:
+          - "Coded >7000 lines to automate end-to-end analytics and visualization."
+          - "Led all phases: architecture, ML engineering, and production delivery."
+      - name: CareerCopilot
+        start_date: 2024-01
+        end_date: present
+        summary: "Founder building AI-driven job-seeker platform; led ML and business."
+        highlights:
+          - "Developed and launched resume, matching, and hiring automation tools."
+          - "Initiated funding process and managed end-to-end AI product."
+      - name: CNN Image Classifiers
+        start_date: 2023-11
+        end_date: 2024-02
+        summary: "Fine-tuned SOTA models for image classification problems."
+        highlights:
+          - "Achieved 96.2% cat/dog and 99.3% MNIST accuracy (near SOTA)."
+          - "Applied transfer learning and advanced model tuning."
+    skills:
+      - label: Programming
+        details: "Python (native), R (advanced), SQL (proficient), C# (intermediate)"
+      - label: ML/AI Frameworks
+        details: "PyTorch, TensorFlow, Keras, HuggingFace, Scikit-learn"
+      - label: Data/Visualization
+        details: "PowerBI, UiPath, Data Viz, ETL Automation"
+      - label: Mathematics
+        details: "Linear algebra, numerical analysis, optimization"
+      - label: Machine Learning
+        details: "Transfer learning, agentic systems, predictive modeling"
+design:
+  theme: sb2nov

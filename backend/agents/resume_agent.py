@@ -1,5 +1,7 @@
 # agents/resume_agent.py
 import json
+import asyncio
+from typing import Optional, Awaitable, Callable, Dict, Any
 from agents import Agent, ModelSettings, Runner, SQLiteSession, function_tool
 from ..utils.tools.resume_generation import rendercv_render  # your @function_tool from earlier
 from dotenv import load_dotenv
@@ -120,6 +122,9 @@ async def resume_builder(input_text: str) -> str:
                 "Please correct the YAML according to the error feedback above and call the render tool again."
             )
 
+        print(f"[resume_builder] Attempt {attempt + 1} starting")
+        await _emit("attempt_start", {"attempt": attempt + 1})
+
         result = await Runner.run(
             resume_agent,
             augmented_input,
@@ -128,6 +133,7 @@ async def resume_builder(input_text: str) -> str:
         )
 
         last_output = result.final_output
+        print(f"[resume_builder] Attempt {attempt + 1} tool output length={len(str(last_output))}")
 
         # Parse the tool output from rendercv_render
         parsed = None
@@ -138,6 +144,8 @@ async def resume_builder(input_text: str) -> str:
                 "The previous output was not valid JSON from rendercv_render. "
                 f"Raw output (truncated): {last_output[:2000]}"
             )
+            print(f"[resume_builder] Attempt {attempt + 1} JSON parse error")
+            await _emit("attempt_fail", {"attempt": attempt + 1, "reason": "json_parse_error"})
             continue
 
         if not isinstance(parsed, dict):
@@ -145,14 +153,19 @@ async def resume_builder(input_text: str) -> str:
                 "The previous output was not a JSON object. "
                 f"Raw output (truncated): {last_output[:2000]}"
             )
+            print(f"[resume_builder] Attempt {attempt + 1} non-dict tool result")
+            await _emit("attempt_fail", {"attempt": attempt + 1, "reason": "non_dict"})
             continue
 
         returncode = parsed.get("returncode")
         pdf_b64 = parsed.get("pdf_b64") or ""
+        pdf_path = parsed.get("pdf_path")
         stderr = parsed.get("stderr") or ""
         stdout = parsed.get("stdout") or ""
 
-        if returncode == 0 and len(pdf_b64) > 0:
+        if returncode == 0 and (pdf_path or len(pdf_b64) > 0):
+            print(f"[resume_builder] Attempt {attempt + 1} success -> pdf_path={pdf_path}")
+            await _emit("attempt_success", {"attempt": attempt + 1, "pdf_path": pdf_path, "has_pdf_b64": len(pdf_b64) > 0})
             return last_output
 
         error_feedback = (
@@ -160,5 +173,21 @@ async def resume_builder(input_text: str) -> str:
             f"stderr (truncated): {stderr[:2000]}\n"
             f"stdout (truncated): {stdout[:2000]}"
         )
+        print(f"[resume_builder] Attempt {attempt + 1} failed: returncode={returncode}")
+        await _emit("attempt_fail", {"attempt": attempt + 1, "returncode": returncode})
 
     return last_output
+
+# --- Lightweight event plumbing for streaming ---
+_resume_events_handler: Optional[Callable[[str, Dict[str, Any]], Awaitable[None]]] = None
+
+def set_resume_events_handler(handler: Optional[Callable[[str, Dict[str, Any]], Awaitable[None]]]) -> None:
+    global _resume_events_handler
+    _resume_events_handler = handler
+
+async def _emit(event_type: str, data: Dict[str, Any]) -> None:
+    if _resume_events_handler is not None:
+        try:
+            await _resume_events_handler(event_type, data)
+        except Exception:
+            pass

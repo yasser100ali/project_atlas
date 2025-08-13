@@ -1,11 +1,12 @@
 import os
+import json
 import base64
 from io import BytesIO
 from typing import List, Optional
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pypdf import PdfReader
 from .utils.prompt import ClientMessage
 from .utils.attachment import Attachment
@@ -28,7 +29,7 @@ async def handle_chat_data(request: Request):
     # Extract the last user message to use as the prompt
     if not request.messages:
         return JSONResponse(content={"error": "No messages provided"}, status_code=400)
-    
+
     user_message = request.messages[-1].content
     print(f"User message: {user_message}")
 
@@ -61,13 +62,39 @@ async def handle_chat_data(request: Request):
     if pdf_texts:
         combined_text = user_message + "\n\nPDF Content:\n" + "\n\n".join(pdf_texts)
 
-    # Run the OpenAI Agent
-    try:
-        final_response = await handle_user_message(combined_text)
-        print("Agent final response:\n" + str(final_response))
-        return JSONResponse(content={"response": final_response})
-    except Exception as e:
-        import traceback
-        print("Error while handling chat:", e)
-        print(traceback.format_exc())
-        return JSONResponse(content={"error": str(e)}, status_code=500)
+    async def ndjson_stream():
+        try:
+            # Initial thinking hint
+            yield json.dumps({"event": "thinking", "data": "Starting agent..."}) + "\n"
+
+            import asyncio
+            queue: asyncio.Queue = asyncio.Queue()
+
+            async def on_event(event_type, data):
+                # forward tool/attempt events as thinking lines
+                payload = {"event": "thinking", "data": {"type": event_type, **(data or {})}}
+                await queue.put(json.dumps(payload) + "\n")
+
+            # Run agent concurrently while flushing queue
+            done = False
+
+            async def run_agent():
+                final = await handle_user_message(combined_text, on_event=on_event)
+                await queue.put(json.dumps({"event": "final", "response": final}) + "\n")
+                return
+
+            task = asyncio.create_task(run_agent())
+            while not task.done() or not queue.empty():
+                try:
+                    line = await asyncio.wait_for(queue.get(), timeout=0.2)
+                    yield line
+                except asyncio.TimeoutError:
+                    await asyncio.sleep(0.05)
+            # ensure any exception is raised
+            await task
+        except Exception as e:
+            import traceback
+            err = {"event": "error", "message": str(e), "trace": traceback.format_exc()[:2000]}
+            yield json.dumps(err) + "\n"
+
+    return StreamingResponse(ndjson_stream(), media_type="application/x-ndjson")

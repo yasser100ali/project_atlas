@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from agents import Agent, Runner, SQLiteSession, function_tool  # type: ignore
 
 from .job_scraper import job_scraper
-from .resume_agent import resume_agent, resume_builder
+from .resume_agent import resume_agent, resume_builder, set_resume_events_handler
 
 load_dotenv()
 
@@ -30,12 +30,27 @@ career_agent = Agent(
 session = SQLiteSession("career_copilot_session")
 
 
-async def handle_user_message(user_text: str) -> str:
+async def handle_user_message(user_text: str, on_event=None) -> str:
     print(f"[orchestrator] Running career agent with user_text length={len(user_text)}")
-    result = await Runner.run(
-        career_agent,
-        user_text,
-        session=session,
-        run_config=None,
-    )
+
+    async def handler(event_type, data):
+        if on_event is not None:
+            try:
+                await on_event(event_type, data)
+            except Exception:
+                pass
+
+    # Register streaming handler for resume agent phases
+    set_resume_events_handler(handler)
+    try:
+        result = await Runner.run(
+            career_agent,
+            user_text,
+            session=session,
+            run_config=None,
+        )
+    finally:
+        # Ensure handler is cleared
+        set_resume_events_handler(None)
+
     return result.final_output
