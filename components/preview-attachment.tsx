@@ -11,6 +11,26 @@ export const PreviewAttachment = ({
 }) => {
   const { name, url, contentType } = attachment;
 
+  // Render PDFs as an embedded viewer; otherwise fall back to thumbnail/link styles
+  if (contentType === "application/pdf") {
+    return (
+      <div className="flex flex-col gap-2 w-full">
+        <div className="w-full rounded-md overflow-hidden">
+          <iframe
+            src={url}
+            title={name || "PDF"}
+            className="w-full h-[640px]"
+          />
+        </div>
+        <div className="text-xs text-zinc-500">
+          <a href={url} target="_blank" rel="noopener noreferrer" className="underline">Open</a>
+          <span> · </span>
+          <a href={url} download={name} className="underline">Download</a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <div className="w-20 aspect-video bg-muted rounded-md relative flex flex-col items-center justify-center">
@@ -24,16 +44,6 @@ export const PreviewAttachment = ({
               alt={name ?? "An image attachment"}
               className="rounded-md size-full object-cover"
             />
-          ) : contentType === "application/pdf" ? (
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              download={name}
-              className="text-blue-500 underline p-2 text-center text-xs"
-            >
-              {name}
-            </a>
           ) : (
             <div className="text-xs p-2">{name}</div>
           )

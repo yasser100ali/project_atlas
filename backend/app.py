@@ -74,6 +74,7 @@ async def handle_chat_data(request: Request):
             result = Runner.run_streamed(career_agent, input=combined_text, session=session)
 
             accumulated_text = ""
+            last_pdf: Optional[dict] = None
 
             async for event in result.stream_events():
                 # Stream raw token deltas as progressively growing final content
@@ -118,17 +119,44 @@ async def handle_chat_data(request: Request):
                         # Surface resume PDF to client if available from resume_builder/rendercv_render
                         try:
                             output = getattr(event.item, "output", None)
-                            if tool_name in ("resume_builder", "rendercv_render") and isinstance(output, str):
-                                parsed = json.loads(output)
-                                pdf_path = parsed.get("pdf_path")
-                                filename = parsed.get("filename") or "resume.pdf"
-                                if pdf_path:
-                                    file_url = f"/api/file?path={quote(pdf_path)}"
-                                    yield json.dumps({
-                                        "event": "resume_ready",
-                                        "data": {"url": file_url, "name": filename, "contentType": "application/pdf"},
-                                    }) + "\n"
-                        except Exception:
+                            print(
+                                f"[tool_call_output_item] tool={tool_name}, output_type={type(output)},\n"
+                                f"snippet={str(output)[:300] if output is not None else '(none)'}\n"
+                            )
+                            # Be robust: sometimes tool metadata is missing. Detect by output shape.
+                            if output is not None:
+                                parsed = None
+                                if isinstance(output, str):
+                                    try:
+                                        parsed = json.loads(output)
+                                    except Exception as e:
+                                        print(f"[resume_ready] json.loads failed: {e}")
+                                elif isinstance(output, dict):
+                                    parsed = output
+
+                                if isinstance(parsed, dict):
+                                    print(f"[resume_ready] parsed keys: {list(parsed.keys())}")
+                                    pdf_path = parsed.get("pdf_path")
+                                    if not pdf_path:
+                                        out_dir = parsed.get("output_folder")
+                                        fname = parsed.get("filename")
+                                        if isinstance(out_dir, str) and isinstance(fname, str):
+                                            pdf_path = os.path.join(out_dir, fname)
+                                    filename = parsed.get("filename") or "resume.pdf"
+
+                                    print(f"\nHere is that pdf path: {pdf_path}\nHere is the filename: {filename}\n\n")
+                                    if pdf_path:
+                                        file_url = f"/api/file?path={quote(str(pdf_path))}"
+                                        last_pdf = {"url": file_url, "name": filename, "contentType": "application/pdf"}
+                                        yield json.dumps({
+                                            "event": "resume_ready",
+                                            "data": last_pdf,
+                                        }) + "\n"
+                                        print(f"[resume_ready] emitted with pdf_path={pdf_path}")
+                                    else:
+                                        print("[resume_ready] No pdf_path in parsed output")
+                        except Exception as e:
+                            print(f"\nError: {e}\n")
                             pass
                         yield json.dumps({
                             "event": "thinking",
@@ -145,6 +173,10 @@ async def handle_chat_data(request: Request):
                                 "data": {"type": "message_output", "text": snippet},
                             }) + "\n"
                     continue
+            # After streaming finishes, re-emit resume_ready if we saw a PDF but the client may have missed it
+            if last_pdf is not None:
+                yield json.dumps({"event": "resume_ready", "data": last_pdf}) + "\n"
+
         except Exception as e:
             import traceback
             err = {"event": "error", "message": str(e), "trace": traceback.format_exc()[:2000]}
@@ -162,4 +194,11 @@ async def get_file(path: str):
     if not real.startswith(base_dir):
         return JSONResponse(content={"error": "Forbidden"}, status_code=403)
     media = "application/pdf" if real.lower().endswith(".pdf") else "application/octet-stream"
+    # For PDFs, set inline so browsers can preview; avoid default 'attachment' disposition
+    if media == "application/pdf":
+        return FileResponse(
+            real,
+            media_type=media,
+            headers={"Content-Disposition": f"inline; filename=\"{os.path.basename(real)}\""},
+        )
     return FileResponse(real, media_type=media, filename=os.path.basename(real))

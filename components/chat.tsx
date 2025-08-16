@@ -17,6 +17,9 @@ export function Chat() {
   const [input, setInput] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
   const thinkingLogsByIdRef = React.useRef<Record<string, string[]>>({});
+  const resumeByIdRef = React.useRef<Record<string, { url: string; name: string; contentType: string } | null>>({});
+
+  // Remove startup test once verified
 
   const append = async (
     message: Message | CreateMessage,
@@ -106,9 +109,24 @@ export function Chat() {
             if (evt.event === "thinking") {
               const msg = typeof evt.data === "string" ? evt.data : JSON.stringify(evt.data);
               thinkingLogsByIdRef.current[assistantId].push(msg);
+            } else if (evt.event === "resume_ready") {
+              const { url, name, contentType } = evt.data || {};
+              // Only store; attach after final to avoid duplicates during stream
+              resumeByIdRef.current[assistantId] = { url, name, contentType };
             } else if (evt.event === "final") {
               const content = typeof evt.response === "string" ? evt.response : JSON.stringify(evt.response);
-              setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content } : m)));
+              const resume = resumeByIdRef.current[assistantId];
+              setMessages((prev) => prev.map((m) => {
+                if (m.id !== assistantId) return m;
+                if (!resume) return { ...m, content } as Message;
+                const existing = (m.experimental_attachments || []) as any[];
+                const deduped = existing.filter((a) => a.url !== resume.url);
+                return {
+                  ...m,
+                  content,
+                  experimental_attachments: [...deduped, resume as any],
+                } as Message;
+              }));
             } else if (evt.event === "error") {
               const errText = evt.message || "Unknown error";
               setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: `Error: ${errText}` } : m)));
