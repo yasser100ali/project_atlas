@@ -48,6 +48,19 @@ export const PreviewMessage = ({
             </details>
           )}
 
+          {message.experimental_attachments && (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-row gap-2">
+                {message.experimental_attachments.map((attachment) => (
+                  <PreviewAttachment
+                    key={attachment.url}
+                    attachment={attachment}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {message.content && (
             <div className="flex flex-col gap-4">
               <Markdown>{message.content as string}</Markdown>
@@ -86,18 +99,6 @@ export const PreviewMessage = ({
             </div>
           )}
 
-          
-
-          {message.experimental_attachments && (
-            <div className="flex flex-row gap-2">
-              {message.experimental_attachments.map((attachment) => (
-                <PreviewAttachment
-                  key={attachment.url}
-                  attachment={attachment}
-                />
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </motion.div>
