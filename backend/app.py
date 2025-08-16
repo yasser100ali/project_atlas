@@ -6,7 +6,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse, FileResponse
+from urllib.parse import quote
 from pypdf import PdfReader
 from .utils.prompt import ClientMessage
 from .utils.attachment import Attachment
@@ -114,6 +115,21 @@ async def handle_chat_data(request: Request):
                             or getattr(getattr(event.item, "tool_call", None), "name", None)
                             or "unknown_tool"
                         )
+                        # Surface resume PDF to client if available from resume_builder/rendercv_render
+                        try:
+                            output = getattr(event.item, "output", None)
+                            if tool_name in ("resume_builder", "rendercv_render") and isinstance(output, str):
+                                parsed = json.loads(output)
+                                pdf_path = parsed.get("pdf_path")
+                                filename = parsed.get("filename") or "resume.pdf"
+                                if pdf_path:
+                                    file_url = f"/api/file?path={quote(pdf_path)}"
+                                    yield json.dumps({
+                                        "event": "resume_ready",
+                                        "data": {"url": file_url, "name": filename, "contentType": "application/pdf"},
+                                    }) + "\n"
+                        except Exception:
+                            pass
                         yield json.dumps({
                             "event": "thinking",
                             "data": {"type": "tool_output", "tool": tool_name, "status": "completed"},
@@ -135,3 +151,15 @@ async def handle_chat_data(request: Request):
             yield json.dumps(err) + "\n"
 
     return StreamingResponse(ndjson_stream(), media_type="application/x-ndjson")
+
+
+@app.get("/api/file")
+async def get_file(path: str):
+    # Only serve files from generated_resumes to prevent arbitrary file access
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    base_dir = os.path.abspath(os.path.join(project_root, "generated_resumes"))
+    real = os.path.abspath(path)
+    if not real.startswith(base_dir):
+        return JSONResponse(content={"error": "Forbidden"}, status_code=403)
+    media = "application/pdf" if real.lower().endswith(".pdf") else "application/octet-stream"
+    return FileResponse(real, media_type=media, filename=os.path.basename(real))

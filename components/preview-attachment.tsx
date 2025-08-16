@@ -24,8 +24,18 @@ export const PreviewAttachment = ({
               alt={name ?? "An image attachment"}
               className="rounded-md size-full object-cover"
             />
+          ) : contentType === "application/pdf" ? (
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              download={name}
+              className="text-blue-500 underline p-2 text-center text-xs"
+            >
+              {name}
+            </a>
           ) : (
-            <div className="" />
+            <div className="text-xs p-2">{name}</div>
           )
         ) : (
           <div className="" />
