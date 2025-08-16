@@ -144,17 +144,23 @@ async def handle_chat_data(request: Request):
                                             pdf_path = os.path.join(out_dir, fname)
                                     filename = parsed.get("filename") or "resume.pdf"
 
-                                    print(f"\nHere is that pdf path: {pdf_path}\nHere is the filename: {filename}\n\n")
-                                    if pdf_path:
-                                        file_url = f"/api/file?path={quote(str(pdf_path))}"
+                                    # Build a URL usable in serverless too: prefer base64 if present
+                                    b64 = parsed.get("pdf_b64")
+                                    if isinstance(b64, str) and len(b64) > 0:
+                                        file_url = f"data:application/pdf;base64,{b64}"
+                                    else:
+                                        file_url = f"/api/file?path={quote(str(pdf_path))}" if pdf_path else None
+
+                                    print(f"\nHere is that pdf path: {pdf_path}\nHere is the filename: {filename}\nUsing URL: {file_url}\n\n")
+                                    if file_url:
                                         last_pdf = {"url": file_url, "name": filename, "contentType": "application/pdf"}
                                         yield json.dumps({
                                             "event": "resume_ready",
                                             "data": last_pdf,
                                         }) + "\n"
-                                        print(f"[resume_ready] emitted with pdf_path={pdf_path}")
+                                        print(f"[resume_ready] emitted with url={file_url}")
                                     else:
-                                        print("[resume_ready] No pdf_path in parsed output")
+                                        print("[resume_ready] No usable URL (no path and no b64)")
                         except Exception as e:
                             print(f"\nError: {e}\n")
                             pass

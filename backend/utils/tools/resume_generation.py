@@ -11,7 +11,7 @@ def rendercv_render(
 	yaml_str: str,
 	out_root: Optional[str] = None,
 	persist_yaml: bool = True,
-	include_pdf_b64: bool = False,
+	include_pdf_b64: bool = True,
 	max_log_chars: int = 4000,
 ) -> str:
     """
