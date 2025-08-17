@@ -1,17 +1,37 @@
 # tools/rendercv_tools.py
-import base64, json, os, re, subprocess, tempfile, time, yaml
+import base64, json, os, re, subprocess, tempfile, time, yaml, sys
 from typing import Optional
 from agents import function_tool
 
 def _slug(s: str) -> str:
     return re.sub(r"[^a-zA-Z0-9]+", "_", s).strip("_")
 
+def _choose_out_root(out_root: Optional[str]) -> str:
+    # Prefer explicit arg, then env var, else writable default
+    if out_root:
+        return out_root
+    env_dir = os.getenv("RESUME_OUT_DIR")
+    if env_dir:
+        return env_dir
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+    default_dir = os.path.join(project_root, "generated_resumes")
+    try:
+        os.makedirs(default_dir, exist_ok=True)
+        test_file = os.path.join(default_dir, ".writetest")
+        with open(test_file, "w", encoding="utf-8") as f:
+            f.write("ok")
+        os.remove(test_file)
+        return default_dir
+    except Exception:
+        return "/tmp/generated_resumes"
+
+
 @function_tool
 def rendercv_render(
 	yaml_str: str,
 	out_root: Optional[str] = None,
 	persist_yaml: bool = True,
-	include_pdf_b64: bool = True,
+	include_pdf_b64: bool = False,
 	max_log_chars: int = 4000,
 ) -> str:
     """
@@ -23,10 +43,8 @@ def rendercv_render(
       - filename: expected PDF filename
       - output_folder: folder where the PDF was written
     """
-    # Resolve project root (apex_v2) and default output directory
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
-    if out_root is None:
-        out_root = os.path.join(project_root, "generated_resumes")
+    # Resolve writable output directory
+    out_root = _choose_out_root(out_root)
 
     os.makedirs(out_root, exist_ok=True)
 
@@ -67,14 +85,8 @@ def rendercv_render(
     yaml_path = os.path.abspath(yaml_path)
     run_dir = os.path.abspath(run_dir)
 
-    # Render to run_dir using direct invocation (no shell)
-    proc = subprocess.run([
-        "rendercv",
-        "render",
-        yaml_path,
-        "-o",
-        run_dir,
-    ], capture_output=True, text=True)
+    # Render to run_dir using module invocation to avoid PATH issues
+    proc = subprocess.run([sys.executable, "-m", "rendercv", "render", yaml_path, "-o", run_dir], capture_output=True, text=True)
 
     # filename = f"{_slug(name)}_CV.pdf"
     # pdf_path = os.path.join(run_dir, filename)
@@ -99,8 +111,10 @@ def rendercv_render(
         except Exception:
             pass
 
+    # Avoid returning giant base64 by default; caller may opt-in via include_pdf_b64
+    do_b64 = bool(include_pdf_b64) and not os.getenv("VERCEL")
     pdf_b64 = ""
-    if include_pdf_b64 and proc.returncode == 0 and os.path.exists(pdf_path):
+    if do_b64 and proc.returncode == 0 and os.path.exists(pdf_path):
         with open(pdf_path, "rb") as f:
             pdf_b64 = base64.b64encode(f.read()).decode("utf-8")
 

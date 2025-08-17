@@ -145,11 +145,8 @@ async def handle_chat_data(request: Request):
                                     filename = parsed.get("filename") or "resume.pdf"
 
                                     # Build a URL usable in serverless too: prefer base64 if present
-                                    b64 = parsed.get("pdf_b64")
-                                    if isinstance(b64, str) and len(b64) > 0:
-                                        file_url = f"data:application/pdf;base64,{b64}"
-                                    else:
-                                        file_url = f"/api/file?path={quote(str(pdf_path))}" if pdf_path else None
+                                    # Always prefer serving via file path route. Do NOT embed base64 in stream.
+                                    file_url = f"/api/file?path={quote(str(pdf_path))}" if pdf_path else None
 
                                     print(f"\nHere is that pdf path: {pdf_path}\nHere is the filename: {filename}\nUsing URL: {file_url}\n\n")
                                     if file_url:
