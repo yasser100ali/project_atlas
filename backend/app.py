@@ -206,8 +206,9 @@ async def get_file(path: str):
     # Only serve files from generated_resumes to prevent arbitrary file access
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     base_dir = os.path.abspath(os.path.join(project_root, "generated_resumes"))
+    tmp_base = "/tmp/generated_resumes"
     real = os.path.abspath(path)
-    if not real.startswith(base_dir):
+    if not (real.startswith(base_dir) or real.startswith(tmp_base)):
         return JSONResponse(content={"error": "Forbidden"}, status_code=403)
     media = "application/pdf" if real.lower().endswith(".pdf") else "application/octet-stream"
     # For PDFs, set inline so browsers can preview; avoid default 'attachment' disposition
