@@ -29,7 +29,7 @@ YAML RULES (STRICT)
   optional `social_networks` (list of {network, username} ONLY), and `sections`.
 - Dates: YYYY-MM; use `present` for ongoing.
 - Sections shape:
-  - summary/about: 3–5 concise bullet lines (TextEntry list).
+  - summary: a singular paragraph summarizing the candidate. 
   - experience: each entry must include {company, position, start_date, end_date, location, highlights[]} with 2–3 quantified bullets.
   - education: each entry must include {institution, area, study_type, start_date, end_date, location, highlights[]}.
   - projects: each entry must include {name, start_date, end_date, summary, highlights[]}.
@@ -51,10 +51,8 @@ cv:
     - network: GitHub
       username: janesmith
   sections:
-    summary:
-      - "Data scientist specializing in ML systems and experiment design."
-      - "Shipped models impacting revenue and latency at scale."
-      - "Seeking ML Engineer roles focused on applied modeling."
+    summary: 
+      - "Data scientist specializing in ML systems and experiment design. I shipped models impacting revenue and latency at scale. I am seeking ML Engineer roles focused on applied modeling."
     experience:
       - company: Acme AI
         position: Machine Learning Engineer
