@@ -2,6 +2,7 @@ import "./globals.css";
 import { GeistSans } from "geist/font/sans";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata = {
   title: "AI SDK Python Streaming Preview",
@@ -32,7 +33,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head></head>
-      <body className={cn(GeistSans.className, "antialiased dark")}>
+      <body className={cn(GeistSans.className, "antialiased dark")}> 
+        <ThemeToggle />
         <Toaster position="top-center" richColors />
         {children}
       </body>
