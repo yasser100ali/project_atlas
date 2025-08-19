@@ -1,4 +1,4 @@
-# Apex AI – Career Tian. 
+# Apex AI – Career Titan. 
 
 Agentic resume copilot that drafts and renders tailored resumes and searches jobs, with real‑time streaming UX.
 
