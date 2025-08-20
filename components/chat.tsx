@@ -153,7 +153,7 @@ export function Chat() {
 
   return (
     <div className="flex flex-col min-w-0 h-[calc(100dvh-52px)] bg-background">
-      <div className="fixed left-4 bottom-16 z-40 flex gap-2 items-center">
+      <div className="fixed left-4 bottom-14 z-40 flex gap-2 items-center">
         <Button
           type="button"
           variant="outline"
