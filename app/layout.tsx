@@ -35,7 +35,10 @@ export default function RootLayout({
     <html lang="en">
       <head></head>
       <body className={cn(GeistSans.className, "antialiased dark")}> 
-        <ThemeToggle />
+        {/* Bottom-left control tray */}
+        <div className="fixed left-4 bottom-4 z-50 flex items-center gap-2">
+          <ThemeToggle />
+        </div>
         <Toaster position="top-center" richColors />
         {children}
       </body>

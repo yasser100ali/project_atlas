@@ -31,14 +31,18 @@ export function ThemeToggle(): JSX.Element {
   };
 
   return (
-    <div className="fixed right-4 top-4 z-50 flex items-center gap-2 text-sm">
-      <span className="select-none">{isDark ? "Dark" : "Light"}</span>
+    <div className="flex items-center gap-2 text-xs">
+      <span className="select-none text-muted-foreground">{isDark ? "Dark" : "Light"}</span>
       <button
         onClick={toggle}
-        className="rounded border px-2 py-1 hover:bg-muted"
+        className="relative inline-flex h-5 w-9 items-center rounded-full border border-input bg-background transition-colors"
         aria-label="Toggle theme"
       >
-        Toggle
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-foreground transition-transform ${
+            isDark ? "translate-x-4" : "translate-x-1"
+          }`}
+        />
       </button>
     </div>
   );

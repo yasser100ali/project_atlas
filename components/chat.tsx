@@ -10,6 +10,7 @@ import type { Message, CreateMessage, ChatRequestOptions } from "ai";
 type Role = "user" | "assistant" | "system";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
 
 export function Chat() {
   const chatId = "001";
@@ -152,11 +153,12 @@ export function Chat() {
 
   return (
     <div className="flex flex-col min-w-0 h-[calc(100dvh-52px)] bg-background">
-      <div className="mx-auto w-full md:max-w-3xl px-4 pt-2 pb-1 flex justify-end">
+      <div className="fixed left-4 bottom-16 z-40 flex gap-2 items-center">
         <Button
           type="button"
           variant="outline"
           size="sm"
+          className="rounded-full px-3 py-1 text-xs shadow-sm bg-background/70 backdrop-blur border-border hover:bg-accent gap-1.5"
           onClick={async () => {
             try {
               await fetch("/api/session/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chatId }) });
@@ -167,6 +169,7 @@ export function Chat() {
             }
           }}
         >
+          <RotateCcw className="size-3" />
           New session
         </Button>
       </div>
