@@ -2,6 +2,25 @@ import Link from "next/link";
 import React, { memo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+
+const normalizeMathMarkdown = (input: string): string => {
+  let output = input;
+  // Convert block lines like: [ ...latex... ] → $$ ... $$ so KaTeX renders
+  output = output.replace(/^\s*\[(.+?)\]\s*$/gm, (fullMatch, inner) => {
+    const content = String(inner).trim();
+    if (/\\[a-zA-Z]+|[\^_]/.test(content)) {
+      return `$$\n${content}\n$$`;
+    }
+    return fullMatch;
+  });
+  // Convert escaped TeX display delimiters \[ ... \] → $$ ... $$
+  output = output.replace(/\\\[(.+?)\\\]/gs, (_m, inner) => `$$\n${inner}\n$$`);
+  // Convert escaped inline delimiters \( ... \) → $...$
+  output = output.replace(/\\\((.+?)\\\)/g, (_m, inner) => `$${inner}$`);
+  return output;
+};
 
 const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   const components: Partial<Components> = {
@@ -41,7 +60,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
     },
     ul: ({ node, children, ...props }) => {
       return (
-        <ul className="list-decimal list-outside ml-4" {...props}>
+        <ul className="list-disc list-outside ml-4" {...props}>
           {children}
         </ul>
       );
@@ -110,9 +129,11 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
     },
   };
 
+  const normalized = React.useMemo(() => normalizeMathMarkdown(children), [children]);
+
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-      {children}
+    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={components}>
+      {normalized}
     </ReactMarkdown>
   );
 };

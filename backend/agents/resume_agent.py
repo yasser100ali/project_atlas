@@ -1,7 +1,5 @@
 # agents/resume_agent.py
 import json
-import asyncio
-from typing import Optional, Awaitable, Callable, Dict, Any
 from agents import Agent, ModelSettings, Runner, SQLiteSession, function_tool
 from ..utils.tools.resume_generation import rendercv_render  # your @function_tool from earlier
 from dotenv import load_dotenv
