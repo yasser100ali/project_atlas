@@ -2,7 +2,7 @@ import os
 import json
 import base64
 from io import BytesIO
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query
@@ -12,6 +12,7 @@ from pypdf import PdfReader
 from .utils.prompt import ClientMessage
 from .utils.attachment import Attachment
 from .agents.orchestrator import career_agent, create_ephemeral_session
+from agents import SQLiteSession  # type: ignore
 from agents import Runner, ItemHelpers  # type: ignore
 from openai.types.responses import ResponseTextDeltaEvent  # type: ignore
 
@@ -19,11 +20,15 @@ load_dotenv(".env")
 
 app = FastAPI()
 
+# Persist agent sessions per chatId so context is preserved across requests
+SESSIONS: Dict[str, SQLiteSession] = {}
+
 # Agents SDK uses a session internally; nothing to instantiate here
 
 class Request(BaseModel):
     messages: List[ClientMessage]
     data: Optional[dict] = None
+    chatId: Optional[str] = "default"
 
 @app.post("/api/chat")
 async def handle_chat_data(request: Request):
@@ -69,8 +74,13 @@ async def handle_chat_data(request: Request):
         try:
             yield json.dumps({"event": "thinking", "data": "Starting agent..."}) + "\n"
 
-            # Create a new session per request to avoid accumulating memory across refreshes
-            session = create_ephemeral_session()
+            # Use or create persistent session per chatId
+            chat_id = request.chatId or "default"
+            session = SESSIONS.get(chat_id)
+            if session is None:
+                session = create_ephemeral_session()
+                SESSIONS[chat_id] = session
+
             result = Runner.run_streamed(career_agent, input=combined_text, session=session)
 
             accumulated_text = ""
@@ -219,3 +229,19 @@ async def get_file(path: str):
             headers={"Content-Disposition": f"inline; filename=\"{os.path.basename(real)}\""},
         )
     return FileResponse(real, media_type=media, filename=os.path.basename(real))
+
+
+class ResetRequest(BaseModel):
+    chatId: Optional[str] = "default"
+
+
+@app.post("/api/session/reset")
+async def reset_session(req: ResetRequest):
+    chat_id = req.chatId or "default"
+    # Remove existing session so a new one is created on next message
+    if chat_id in SESSIONS:
+        try:
+            del SESSIONS[chat_id]
+        except Exception:
+            pass
+    return JSONResponse(content={"ok": True, "chatId": chat_id})

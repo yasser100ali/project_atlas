@@ -9,6 +9,7 @@ import { ToolInvocation } from "ai";
 import type { Message, CreateMessage, ChatRequestOptions } from "ai";
 type Role = "user" | "assistant" | "system";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 export function Chat() {
   const chatId = "001";
@@ -68,6 +69,7 @@ export function Chat() {
         { role: "user" as Role, content: contentToSend },
       ],
       data: { attachments },
+      chatId,
     };
 
     // Prepare assistant placeholder to attach thinking logs to
@@ -150,6 +152,24 @@ export function Chat() {
 
   return (
     <div className="flex flex-col min-w-0 h-[calc(100dvh-52px)] bg-background">
+      <div className="mx-auto w-full md:max-w-3xl px-4 pt-2 pb-1 flex justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={async () => {
+            try {
+              await fetch("/api/session/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chatId }) });
+              setMessages([]);
+              toast.success("New session started");
+            } catch (e: any) {
+              toast.error(e?.message || "Failed to reset session");
+            }
+          }}
+        >
+          New session
+        </Button>
+      </div>
       <div
         ref={messagesContainerRef}
         className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4"
