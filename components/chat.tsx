@@ -175,7 +175,7 @@ export function Chat() {
       </div>
       <div
         ref={messagesContainerRef}
-        className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4"
+        className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4 pb-40"
       >
         {messages.length === 0 && <Overview />}
 
@@ -199,7 +199,7 @@ export function Chat() {
         />
       </div>
 
-      <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
+      <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 mb-4 md:mb-6 gap-2 w-full md:max-w-3xl">
         <MultimodalInput
           chatId={chatId}
           input={input}
