@@ -149,7 +149,7 @@ export function Chat() {
   };
 
   const [messagesContainerRef, messagesEndRef] =
-    useScrollToBottom<HTMLDivElement>();
+    useScrollToBottom<HTMLDivElement>(140);
 
   return (
     <div className="flex flex-col min-w-0 min-h-[100dvh] bg-background">

@@ -1,6 +1,6 @@
 import { useEffect, useRef, type RefObject } from "react";
 
-export function useScrollToBottom<T extends HTMLElement>(): [
+export function useScrollToBottom<T extends HTMLElement>(offsetPx: number = 100): [
   RefObject<T>,
   RefObject<T>,
 ] {
@@ -13,7 +13,11 @@ export function useScrollToBottom<T extends HTMLElement>(): [
 
     if (container && end) {
       const observer = new MutationObserver(() => {
-        end.scrollIntoView({ behavior: "auto", block: "end" });
+        const endEl = endRef.current as unknown as HTMLElement | null;
+        if (!endEl) return;
+        const rect = endEl.getBoundingClientRect();
+        const targetY = window.scrollY + rect.top - offsetPx;
+        window.scrollTo({ top: Math.max(0, targetY), behavior: "smooth" });
       });
 
       observer.observe(container, {
@@ -25,7 +29,7 @@ export function useScrollToBottom<T extends HTMLElement>(): [
 
       return () => observer.disconnect();
     }
-  }, []);
+  }, [offsetPx]);
 
   return [containerRef, endRef];
 }
