@@ -69,6 +69,7 @@ export function MultimodalInput({
   const { width } = useWindowSize();
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isPageDragOver, setIsPageDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -168,6 +169,41 @@ export function MultimodalInput({
     }
   };
 
+  // Enable dropping files anywhere on the page
+  useEffect(() => {
+    const onWindowDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      setIsPageDragOver(true);
+    };
+    const onWindowDragOver = (e: DragEvent) => {
+      e.preventDefault();
+    };
+    const onWindowDrop = (e: DragEvent) => {
+      e.preventDefault();
+      setIsPageDragOver(false);
+      const files = e.dataTransfer?.files;
+      if (files && files.length > 0) {
+        setAttachments((prev) => [...prev, ...Array.from(files)]);
+      }
+    };
+    const onWindowDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      setIsPageDragOver(false);
+    };
+
+    window.addEventListener("dragenter", onWindowDragEnter);
+    window.addEventListener("dragover", onWindowDragOver);
+    window.addEventListener("drop", onWindowDrop);
+    window.addEventListener("dragleave", onWindowDragLeave);
+
+    return () => {
+      window.removeEventListener("dragenter", onWindowDragEnter);
+      window.removeEventListener("dragover", onWindowDragOver);
+      window.removeEventListener("drop", onWindowDrop);
+      window.removeEventListener("dragleave", onWindowDragLeave);
+    };
+  }, []);
+
   const submitForm = useCallback(() => {
     const fileToDataUrl = (file: File): Promise<string> => {
       return new Promise((resolve, reject) => {
@@ -206,6 +242,30 @@ export function MultimodalInput({
 
   return (
     <div className="relative w-full flex flex-col gap-2">
+      {isPageDragOver && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm"
+          onDragOver={(e) => {
+            e.preventDefault();
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            const files = e.dataTransfer.files;
+            setIsPageDragOver(false);
+            if (files && files.length > 0) {
+              setAttachments((prev) => [...prev, ...Array.from(files)]);
+            }
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            setIsPageDragOver(false);
+          }}
+        >
+          <div className="rounded-2xl border-2 border-dashed border-foreground/40 px-6 py-4 text-sm">
+            Drop files to attach
+          </div>
+        </div>
+      )}
       {attachments.length > 0 && (
         <div className="flex gap-2 flex-wrap">
           {attachments.map((file, index) => (
