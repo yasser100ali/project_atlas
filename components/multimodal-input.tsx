@@ -229,6 +229,15 @@ export function MultimodalInput({
         },
       });
 
+      // Clear attachments so they don't appear on the next prompt
+      setAttachments([]);
+      if (fileInputRef.current) {
+        try {
+          // reset the native input so selecting the same file again re-triggers onChange
+          fileInputRef.current.value = "";
+        } catch {}
+      }
+
       setLocalStorageInput("");
       resetHeight();
 
