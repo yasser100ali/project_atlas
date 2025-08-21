@@ -199,7 +199,7 @@ export function Chat() {
         />
       </div>
 
-      <form className="flex mx-auto translate-x-9 fixed bottom-0 left-0 right-0 px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
+      <form className="flex mx-auto fixed bottom-0 left-0 right-0 px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
       <MultimodalInput
           chatId={chatId}
           input={input}
