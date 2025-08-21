@@ -152,7 +152,7 @@ export function Chat() {
     useScrollToBottom<HTMLDivElement>();
 
   return (
-    <div className="flex flex-col min-w-0 h-[calc(100dvh-52px)] bg-background">
+    <div className="flex flex-col min-w-0 min-h-[100dvh] bg-background">
       <div className="fixed left-4 bottom-14 z-40 flex gap-2 items-center">
         <Button
           type="button"
@@ -175,7 +175,7 @@ export function Chat() {
       </div>
       <div
         ref={messagesContainerRef}
-        className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4 pb-8"
+        className="flex flex-col min-w-0 gap-6 pt-4 pb-8"
       >
         {messages.length === 0 && <Overview />}
 
