@@ -200,10 +200,10 @@ export function Chat() {
       </aside>
 
       {/* Main area that respects the sidebar width */}
-      <main className={cn("flex flex-col min-w-0 flex-1", isSidebarOpen ? "ml-56" : "ml-16")}> 
+      <main className={cn("flex flex-col min-w-0 flex-1 min-h-[100dvh]", isSidebarOpen ? "ml-56" : "ml-16")}> 
         <div
           ref={messagesContainerRef}
-          className="flex flex-col min-w-0 gap-6 pt-4 pb-40"
+          className="flex flex-col min-w-0 flex-1 gap-6 pt-4 pb-40"
         >
           {messages.length === 0 && <Overview />}
 
@@ -227,7 +227,7 @@ export function Chat() {
           />
         </div>
 
-        <form className="flex sticky bottom-0 mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
+        <form className="flex sticky bottom-0 z-40 mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
           <MultimodalInput
             chatId={chatId}
             input={input}
