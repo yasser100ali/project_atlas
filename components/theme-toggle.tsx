@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
+import { Button } from "@/components/ui/button";
 
-export function ThemeToggle(): JSX.Element {
+export function ThemeToggle({ asButton = false, expanded = true }: { asButton?: boolean; expanded?: boolean }): JSX.Element {
   const [isDark, setIsDark] = React.useState<boolean>(true);
 
   // Initialize from localStorage and current DOM state
@@ -30,17 +31,31 @@ export function ThemeToggle(): JSX.Element {
     });
   };
 
+  if (asButton) {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="rounded-full px-3 py-1 text-xs shadow-sm bg-background/70 backdrop-blur border-border hover:bg-accent gap-1.5"
+        onClick={toggle}
+        aria-label="Toggle theme"
+      >
+        {expanded ? (isDark ? "Dark" : "Light") : isDark ? "☾" : "☀︎"}
+      </Button>
+    );
+  }
+
   return (
-    <div className="flex items-center gap-3 text-xs pl-2">
-      <span className="select-none text-muted-foreground">{isDark ? "Dark" : "Light"}</span>
+    <div className="flex items-center gap-2 text-xs pl-1">
       <button
         onClick={toggle}
-        className="relative inline-flex h-5 w-10 items-center rounded-full border border-input bg-background transition-colors"
+        className="relative inline-flex h-4 w-8 items-center rounded-full border border-input bg-background transition-colors"
         aria-label="Toggle theme"
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-foreground transition-transform ${
-            isDark ? "translate-x-5" : "translate-x-1.5"
+          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-foreground transition-transform ${
+            isDark ? "translate-x-4" : "translate-x-1"
           }`}
         />
       </button>

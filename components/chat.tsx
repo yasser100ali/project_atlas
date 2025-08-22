@@ -2,6 +2,7 @@
 
 import React from "react";
 import { PreviewMessage, ThinkingMessage } from "@/components/message";
+import { cn } from "@/lib/utils";
 import { MultimodalInput } from "@/components/multimodal-input";
 import { Overview } from "@/components/overview";
 import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
@@ -11,6 +12,7 @@ type Role = "user" | "assistant" | "system";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Chat() {
   const chatId = "001";
@@ -18,6 +20,7 @@ export function Chat() {
   const [messages, setMessages] = React.useState<Array<Message>>([]);
   const [input, setInput] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const thinkingLogsByIdRef = React.useRef<Record<string, string[]>>({});
   const resumeByIdRef = React.useRef<Record<string, { url: string; name: string; contentType: string } | null>>({});
 
@@ -152,66 +155,92 @@ export function Chat() {
     useScrollToBottom<HTMLDivElement>(140);
 
   return (
-    <div className="flex flex-col min-w-0 min-h-[100dvh] bg-background">
-      <div className="fixed left-4 bottom-14 z-40 flex gap-2 items-center">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="rounded-full px-3 py-1 text-xs shadow-sm bg-background/70 backdrop-blur border-border hover:bg-accent gap-1.5"
-          onClick={async () => {
-            try {
-              await fetch("/api/session/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chatId }) });
-              setMessages([]);
-              toast.success("New session started");
-            } catch (e: any) {
-              toast.error(e?.message || "Failed to reset session");
-            }
-          }}
-        >
-          <RotateCcw className="size-3" />
-          New session
-        </Button>
-      </div>
-      <div
-        ref={messagesContainerRef}
-        className="flex flex-col min-w-0 gap-6 pt-4 pb-40"
+    <div className="flex min-h-[100dvh] bg-background">
+      {/* Left sidebar sliver with border; expands on toggle */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 flex flex-col border-r bg-background/95 backdrop-blur transition-[width] duration-200",
+          isSidebarOpen ? "w-56" : "w-16",
+        )}
       >
-        {messages.length === 0 && <Overview />}
+        {/* Removed duplicate top toggle */}
+        <div className="p-3 flex flex-col gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-full px-3 py-1 text-xs shadow-sm bg-background/70 backdrop-blur border-border hover:bg-accent gap-1.5"
+            onClick={async () => {
+              try {
+                await fetch("/api/session/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chatId }) });
+                setMessages([]);
+                toast.success("New session started");
+              } catch (e: any) {
+                toast.error(e?.message || "Failed to reset session");
+              }
+            }}
+          >
+            <RotateCcw className="size-3" />
+            {isSidebarOpen ? "New session" : ""}
+          </Button>
+          <ThemeToggle asButton expanded={isSidebarOpen} />
+        </div>
+        <div className="mt-auto p-2 w-full flex justify-center pl-1">
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            className="rounded-full h-8 w-8"
+            onClick={() => setIsSidebarOpen((v) => !v)}
+            aria-label="Toggle sidebar"
+          >
+            <span className="text-lg leading-none">{isSidebarOpen ? "⟨" : "⟩"}</span>
+          </Button>
+        </div>
+      </aside>
 
-        {messages.map((message: Message, index: number) => (
-          <PreviewMessage
-            key={message.id}
-            chatId={chatId}
-            message={message}
-            isLoading={isLoading && messages.length - 1 === index}
-            thinkingLogs={thinkingLogsByIdRef.current[message.id]}
-          />
-        ))}
-
-        {isLoading &&
-          messages.length > 0 &&
-          messages[messages.length - 1].role === "user" && <ThinkingMessage />}
-
+      {/* Main area that respects the sidebar width */}
+      <main className={cn("flex flex-col min-w-0 flex-1", isSidebarOpen ? "ml-56" : "ml-16")}> 
         <div
-          ref={messagesEndRef}
-          className="shrink-0 min-w-[24px] min-h-[24px]"
-        />
-      </div>
+          ref={messagesContainerRef}
+          className="flex flex-col min-w-0 gap-6 pt-4 pb-40"
+        >
+          {messages.length === 0 && <Overview />}
 
-      <form className="flex mx-auto fixed bottom-0 left-0 right-0 px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
-      <MultimodalInput
-          chatId={chatId}
-          input={input}
-          setInput={setInput}
-          handleSubmit={handleSubmit}
-          isLoading={isLoading}
-          stop={stop}
-          messages={messages}
-          setMessages={setMessages}
-          append={append}
-        />
-      </form>
+          {messages.map((message: Message, index: number) => (
+            <PreviewMessage
+              key={message.id}
+              chatId={chatId}
+              message={message}
+              isLoading={isLoading && messages.length - 1 === index}
+              thinkingLogs={thinkingLogsByIdRef.current[message.id]}
+            />
+          ))}
+
+          {isLoading &&
+            messages.length > 0 &&
+            messages[messages.length - 1].role === "user" && <ThinkingMessage />}
+
+          <div
+            ref={messagesEndRef}
+            className="shrink-0 min-w-[24px] min-h-[24px]"
+          />
+        </div>
+
+        <form className="flex sticky bottom-0 mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
+          <MultimodalInput
+            chatId={chatId}
+            input={input}
+            setInput={setInput}
+            handleSubmit={handleSubmit}
+            isLoading={isLoading}
+            stop={stop}
+            messages={messages}
+            setMessages={setMessages}
+            append={append}
+          />
+        </form>
+      </main>
     </div>
   );
 }
