@@ -16,15 +16,18 @@ Directory structure:
      │    └── geist.ttf
      ├── backend/
      │    ├── agents/
-     │    │    ├── career_copilot.py
      │    │    ├── job_scraper.py
-     │    │    └── resume.py
+     │    │    ├── orchestrator.py
+     │    │    └── resume_agent.py
      │    ├── app.py
      │    └── utils/
      │         ├── __init__.py
      │         ├── attachment.py
+     │         ├── memory.py
      │         ├── prompt.py
-     │         ├── tools.py
+     │         ├── tools/
+     │         │    ├── resume_generation.py
+     │         │    └── search_job.py
      │         └── utils.py
      ├── components/
      │    ├── chat.tsx
@@ -34,12 +37,11 @@ Directory structure:
      │    ├── multimodal-input.tsx
      │    ├── overview.tsx
      │    ├── preview-attachment.tsx
-     │    ├── ui/
-     │    │    ├── button.tsx
-     │    │    └── textarea.tsx
-     │    └── weather.tsx
+     │    ├── theme-toggle.tsx
+     │    └── ui/
+     │         ├── button.tsx
+     │         └── textarea.tsx
      ├── components.json
-     ├── file_structure
      ├── hooks/
      │    └── use-scroll-to-bottom.tsx
      ├── lib/
@@ -52,7 +54,13 @@ Directory structure:
      ├── public/
      │    ├── next.svg
      │    └── vercel.svg
+     ├── pyrightconfig.json
      ├── requirements.txt
+     ├── services/
+     │    └── rendercv-worker/
+     │         ├── DockerFile
+     │         ├── main.py
+     │         └── requirements.txt
      ├── tailwind.config.js
      ├── tsconfig.json
      └── vercel.json
