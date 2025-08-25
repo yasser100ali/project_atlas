@@ -1,11 +1,10 @@
 services:
   - type: web
     name: rendercv-worker
-    env: python
+    env: docker
     rootDir: services/rendercv-worker
     plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: RENDER_WORKER_AUTH
         sync: false
