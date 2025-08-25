@@ -1,30 +1,21 @@
-FROM python:3.11-slim
+# services/rendercv-worker/Dockerfile
+FROM python:3.12-slim
 
-# Install system dependencies for LaTeX and RenderCV
-RUN apt-get update && apt-get install -y \
-    latexmk \
-    texlive-xetex \
-    texlive-latex-extra \
-    texlive-fonts-recommended \
-    texlive-fonts-extra \
-    && rm -rf /var/lib/apt/lists/*
+# Install LaTeX bits needed by RenderCV (lean set)
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    latexmk texlive-xetex texlive-latex-extra texlive-fonts-recommended \
+ && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python deps from this folder
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
-# Copy application code
-COPY . .
+# Copy app code
+COPY main.py /app/main.py
 
-# Expose port
-EXPOSE 8000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/healthz || exit 1
-
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Render provides PORT; uvicorn must listen on it
+ENV PORT=8080
+CMD ["bash", "-lc", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
