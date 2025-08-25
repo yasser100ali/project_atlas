@@ -2,14 +2,13 @@ services:
   - type: web
     name: rendercv-worker
     env: python
-    rootDir: services/rendercv-worker
     plan: free         # or standard
     buildCommand: >
       apt-get update && apt-get install -y --no-install-recommends
       latexmk texlive-xetex texlive-latex-extra texlive-fonts-recommended &&
       pip install --upgrade pip &&
-      pip install --no-cache-dir -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+      pip install --no-cache-dir -r services/rendercv-worker/requirements.txt
+    startCommand: uvicorn services.rendercv-worker.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /healthz
     envVars:
       - key: RENDER_WORKER_AUTH
