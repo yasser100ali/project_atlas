@@ -114,6 +114,7 @@ async def handle_chat_data(request: Request):
                             or getattr(getattr(event.item, "tool_call", None), "name", None)
                             or "unknown_tool"
                         )
+                        print(f"[DEBUG] Tool call detected: {tool_name}")
                         yield json.dumps({
                             "event": "thinking",
                             "data": {"type": "tool_call", "tool": tool_name},
@@ -174,6 +175,7 @@ async def handle_chat_data(request: Request):
                                     print(f"\nHere is that pdf path: {pdf_path}\nHere is the filename: {filename}\nUsing URL: {file_url}\n\n")
                                     if file_url:
                                         last_pdf = {"url": file_url, "name": filename, "contentType": "application/pdf"}
+                                        print(f"[DEBUG] About to emit resume_ready event with data: {last_pdf}")
                                         yield json.dumps({
                                             "event": "resume_ready",
                                             "data": last_pdf,
