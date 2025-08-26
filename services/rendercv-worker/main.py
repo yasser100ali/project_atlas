@@ -47,6 +47,7 @@ def render(req: RenderRequest, authorization: str | None = Header(default=None))
         with open(yaml_path, 'r') as f:
             yaml_content = f.read()
             print(f"[DEBUG] YAML content length: {len(yaml_content)}")
+            print(f"[DEBUG] FULL YAML content: {yaml_content}")
             print(f"[DEBUG] YAML content preview: {yaml_content[:500]}...")
 
         # RenderCV -> PDF (requires TeX + latexmk in the container)
