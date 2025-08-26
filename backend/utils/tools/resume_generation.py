@@ -139,6 +139,11 @@ def _render_via_worker(
         return None, "", "Remote render attempted without RENDER_WORKER_URL", 1, None
 
     try:
+        # Ensure the worker URL includes the /render endpoint
+        if not worker_url.endswith('/render'):
+            worker_url = worker_url.rstrip('/') + '/render'
+
+        print(f"[DEBUG] Calling rendercv worker at: {worker_url}")
         resp = requests.post(
             worker_url,
             json={
