@@ -107,6 +107,7 @@ async def resume_builder(input_text: str) -> str:
     session = SQLiteSession("career_copilot_session")
     max_attempts = 3
     last_output = ""
+    original_successful_response = ""  # Store the original response with base64 data
     error_feedback = ""
 
     for attempt in range(1, max_attempts + 1):
@@ -125,8 +126,36 @@ async def resume_builder(input_text: str) -> str:
             run_config=None,
         )
 
-        last_output = result.final_output or ""
-        print(f"[resume_builder] Attempt {attempt} tool output length={len(last_output)}")
+        raw_output = result.final_output or ""
+        print(f"[resume_builder] Attempt {attempt} tool output length={len(raw_output)}")
+
+        # Store original response if it contains successful PDF data
+        if len(raw_output) > 10000:  # If response is very large
+            try:
+                parsed = json.loads(raw_output)
+                if (isinstance(parsed, dict) and
+                    parsed.get('returncode') == 0 and
+                    ('pdf_b64' in parsed or 'pdf_path' in parsed)):
+                    print(f"[DEBUG] Storing original successful response with base64 data")
+                    original_successful_response = raw_output
+            except json.JSONDecodeError:
+                pass
+
+        # Use sanitized version for processing to avoid token limits
+        last_output = raw_output
+        if len(raw_output) > 10000:  # If response is very large
+            try:
+                parsed = json.loads(raw_output)
+                if isinstance(parsed, dict) and 'pdf_b64' in parsed and len(parsed['pdf_b64']) > 1000:
+                    print(f"[DEBUG] Using sanitized version for processing: {len(parsed['pdf_b64'])} chars")
+                    parsed['pdf_b64'] = f"<base64_data_sanitized_length_{len(parsed['pdf_b64'])}>"
+                    last_output = json.dumps(parsed)
+                    print(f"[DEBUG] Sanitized output length: {len(last_output)}")
+            except json.JSONDecodeError:
+                # If it's not JSON, check if it contains base64-like data
+                if 'pdf_b64' in raw_output and len(raw_output) > 20000:
+                    print("[DEBUG] Truncating non-JSON response with base64 data")
+                    last_output = raw_output[:10000] + "...[truncated_base64_data]"
 
         # Parse tool output (rendercv_render returns JSON string)
         try:
@@ -155,9 +184,9 @@ async def resume_builder(input_text: str) -> str:
 
         if returncode == 0 and (pdf_path or len(pdf_b64) > 0):
             print(f"[resume_builder] Attempt {attempt} success -> pdf_path={pdf_path}, has_b64={bool(pdf_b64)}")
-            # Store the full response for the frontend, but return a compact version to avoid token limits
-            # The full response will be available to the frontend through the streaming events
-            return last_output
+            # Store the original successful response for returning to frontend
+            original_successful_response = raw_output
+            return raw_output
 
         # Create error feedback without the massive base64 data
         error_feedback_parts = [f"Render failed (returncode={returncode})."]
@@ -179,5 +208,10 @@ async def resume_builder(input_text: str) -> str:
         error_feedback = "\n".join(error_feedback_parts)
         print(f"[resume_builder] Attempt {attempt} failed: returncode={returncode}")
 
-    # After retries, return last tool output (caller can surface error to user)
+    # After retries, return the original successful response if available, otherwise the last output
+    if original_successful_response:
+        print(f"[DEBUG] Returning original successful response with base64 data")
+        return original_successful_response
+
+    print(f"[DEBUG] Returning last output (no successful render)")
     return last_output
