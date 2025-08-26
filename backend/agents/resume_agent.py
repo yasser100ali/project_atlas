@@ -196,11 +196,13 @@ async def resume_builder(input_text: str) -> str:
             print(f"[resume_builder] Attempt {attempt} success -> pdf_path={pdf_path}, has_b64={bool(pdf_b64)}")
             # Store the original successful response for returning to frontend
             successful_response_with_base64 = raw_output
+            # Extract filename from the parsed response
+            filename = parsed.get("filename", "resume.pdf")
             # Return a clean success message to the LLM (no base64 data)
             return json.dumps({
                 "success": True,
                 "message": "Resume PDF generated successfully",
-                "filename": expected_filename,
+                "filename": filename,
                 "has_base64": len(pdf_b64) > 0
             })
 
