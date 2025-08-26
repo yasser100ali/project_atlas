@@ -18,6 +18,12 @@ from openai.types.responses import ResponseTextDeltaEvent  # type: ignore
 
 load_dotenv(".env")
 
+# Debug environment variables
+print(f"[DEBUG] Environment variables:")
+print(f"[DEBUG] VERCEL: {os.getenv('VERCEL')}")
+print(f"[DEBUG] RENDER_WORKER_URL: {os.getenv('RENDER_WORKER_URL')}")
+print(f"[DEBUG] RENDER_WORKER_AUTH: {'***' if os.getenv('RENDER_WORKER_AUTH') else 'None'}")
+
 app = FastAPI()
 
 # Persist agent sessions per chatId so context is preserved across requests

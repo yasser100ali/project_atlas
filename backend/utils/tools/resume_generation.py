@@ -189,7 +189,12 @@ def _should_use_remote() -> bool:
     Decide whether to delegate to the worker:
     - If running on Vercel (env var present) and RENDER_WORKER_URL is set, use remote.
     """
-    return bool(os.getenv("VERCEL") and os.getenv("RENDER_WORKER_URL"))
+    vercel_env = os.getenv("VERCEL")
+    worker_url = os.getenv("RENDER_WORKER_URL")
+    print(f"[DEBUG] _should_use_remote: VERCEL={vercel_env}, RENDER_WORKER_URL={worker_url}")
+    result = bool(vercel_env and worker_url)
+    print(f"[DEBUG] _should_use_remote result: {result}")
+    return result
 
 
 # ---------- public tool (thin orchestrator) ----------
@@ -231,12 +236,14 @@ def rendercv_render(
 
     # Strategy choice
     if _should_use_remote():
+        print(f"[DEBUG] Using remote worker for rendercv")
         pdf_b64, stdout_str, stderr_str, returncode, url = _render_via_worker(
             yaml_str=yaml_str,
             expected_filename=expected_filename,
-            include_pdf_b64=include_pdf_b64,
+            include_pdf_b64=True,  # Always request base64 in remote mode
         )
     else:
+        print(f"[DEBUG] Using local rendercv")
         # Local branch
         returncode, out, err = _render_locally(yaml_path, run_dir)
         stdout_str, stderr_str = out, err
