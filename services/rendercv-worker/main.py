@@ -42,19 +42,37 @@ def render(req: RenderRequest, authorization: str | None = Header(default=None))
         # Debug: Check what's in the YAML file
         print(f"YAML content: {req.yaml}", file=open(os.path.join(td, "debug.log"), "w"))
 
+        # Debug: Show what YAML we're processing
+        print(f"[DEBUG] Processing YAML file: {yaml_path}")
+        with open(yaml_path, 'r') as f:
+            yaml_content = f.read()
+            print(f"[DEBUG] YAML content length: {len(yaml_content)}")
+            print(f"[DEBUG] YAML content preview: {yaml_content[:500]}...")
+
         # RenderCV -> PDF (requires TeX + latexmk in the container)
         # Try the render command with different syntax
+        print("[DEBUG] Running rendercv command...")
         proc = subprocess.run(
             ["python", "-m", "rendercv", "render", yaml_path, "--output-folder", td],
             capture_output=True, text=True
         )
 
+        print(f"[DEBUG] rendercv returncode: {proc.returncode}")
+        print(f"[DEBUG] rendercv stdout length: {len(proc.stdout)}")
+        print(f"[DEBUG] rendercv stderr length: {len(proc.stderr)}")
+        if proc.stdout:
+            print(f"[DEBUG] rendercv stdout: {proc.stdout[:1000]}")
+        if proc.stderr:
+            print(f"[DEBUG] rendercv stderr: {proc.stderr[:1000]}")
+
         # If that fails, try alternative syntax
         if proc.returncode != 0:
+            print("[DEBUG] Trying alternative rendercv syntax...")
             proc = subprocess.run(
                 ["python", "-m", "rendercv", "render", yaml_path, "-o", td],
                 capture_output=True, text=True
             )
+            print(f"[DEBUG] Alternative rendercv returncode: {proc.returncode}")
         if proc.returncode != 0:
             error_msg = f"rendercv failed with return code {proc.returncode}"
             if proc.stderr:
