@@ -155,13 +155,28 @@ async def resume_builder(input_text: str) -> str:
 
         if returncode == 0 and (pdf_path or len(pdf_b64) > 0):
             print(f"[resume_builder] Attempt {attempt} success -> pdf_path={pdf_path}, has_b64={bool(pdf_b64)}")
+            # Store the full response for the frontend, but return a compact version to avoid token limits
+            # The full response will be available to the frontend through the streaming events
             return last_output
 
-        error_feedback = (
-            f"Render failed (returncode={returncode}).\n"
-            f"stderr (truncated): {stderr[:2000]}\n"
-            f"stdout (truncated): {stdout[:2000]}"
-        )
+        # Create error feedback without the massive base64 data
+        error_feedback_parts = [f"Render failed (returncode={returncode})."]
+
+        if stderr and len(stderr) > 0:
+            # Truncate stderr but avoid including base64 data
+            clean_stderr = stderr[:2000]
+            if 'pdf_b64' in clean_stderr:
+                clean_stderr = clean_stderr.split('pdf_b64')[0] + '...[base64_data_truncated]'
+            error_feedback_parts.append(f"stderr (truncated): {clean_stderr}")
+
+        if stdout and len(stdout) > 0:
+            # Truncate stdout but avoid including base64 data
+            clean_stdout = stdout[:2000]
+            if 'pdf_b64' in clean_stdout or len(clean_stdout) > 10000:
+                clean_stdout = '...[output_truncated_to_avoid_token_limit]'
+            error_feedback_parts.append(f"stdout (truncated): {clean_stdout}")
+
+        error_feedback = "\n".join(error_feedback_parts)
         print(f"[resume_builder] Attempt {attempt} failed: returncode={returncode}")
 
     # After retries, return last tool output (caller can surface error to user)
