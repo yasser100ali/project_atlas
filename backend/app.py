@@ -40,6 +40,19 @@ class Request(BaseModel):
 async def handle_chat_data(request: Request):
     print("Received request in handle_chat_data")
 
+    # Debug: Log chat history and memory info
+    print(f"[DEBUG] Chat ID: {request.chatId or 'default'}")
+    print(f"[DEBUG] Number of messages in history: {len(request.messages)}")
+    if len(request.messages) > 0:
+        print(f"[DEBUG] First message: {request.messages[0].content[:100]}...")
+        print(f"[DEBUG] Last message: {request.messages[-1].content[:100]}...")
+
+        # Calculate approximate token count for chat history
+        total_chars = sum(len(msg.content) for msg in request.messages)
+        estimated_tokens = total_chars // 4  # Rough estimate: 1 token ≈ 4 chars
+        print(f"[DEBUG] Total characters in chat history: {total_chars}")
+        print(f"[DEBUG] Estimated tokens in chat history: {estimated_tokens}")
+
     # Extract the last user message to use as the prompt
     if not request.messages:
         return JSONResponse(content={"error": "No messages provided"}, status_code=400)
@@ -75,6 +88,11 @@ async def handle_chat_data(request: Request):
     combined_text = user_message
     if pdf_texts:
         combined_text = user_message + "\n\nPDF Content:\n" + "\n\n".join(pdf_texts)
+
+    # Debug: Log the final combined text length
+    print(f"[DEBUG] Final combined text length: {len(combined_text)}")
+    print(f"[DEBUG] Estimated tokens in combined text: {len(combined_text) // 4}")
+    print(f"[DEBUG] Combined text preview: {combined_text[:200]}...")
 
     async def ndjson_stream():
         try:
@@ -246,10 +264,18 @@ class ResetRequest(BaseModel):
 @app.post("/api/session/reset")
 async def reset_session(req: ResetRequest):
     chat_id = req.chatId or "default"
+    print(f"[DEBUG] Session reset requested for chat_id: {chat_id}")
+    print(f"[DEBUG] Sessions before reset: {list(SESSIONS.keys())}")
+
     # Remove existing session so a new one is created on next message
     if chat_id in SESSIONS:
         try:
             del SESSIONS[chat_id]
-        except Exception:
-            pass
+            print(f"[DEBUG] Successfully removed session: {chat_id}")
+        except Exception as e:
+            print(f"[DEBUG] Error removing session: {e}")
+    else:
+        print(f"[DEBUG] Session {chat_id} not found in active sessions")
+
+    print(f"[DEBUG] Sessions after reset: {list(SESSIONS.keys())}")
     return JSONResponse(content={"ok": True, "chatId": chat_id})
