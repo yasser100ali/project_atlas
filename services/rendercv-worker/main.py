@@ -12,27 +12,56 @@ class RenderRequest(BaseModel):
     include_pdf_b64: bool = True  # return base64 by default
     filename: str | None = None   # suggested filename for display
 
-@app.get("/healthz")
-def healthz():
-    return {"ok": True}
+@app.get("/health")
+async def health():
+    return {"ok": True, "status": "healthy"}
 
 @app.post("/render")
 def render(req: RenderRequest, authorization: str | None = Header(default=None)):
     if AUTH and authorization != f"Bearer {AUTH}":
         raise HTTPException(status_code=401, detail="Unauthorized")
 
+    # Check if rendercv is available
+    try:
+        check_proc = subprocess.run(
+            ["python", "-m", "rendercv", "--version"],
+            capture_output=True, text=True, timeout=10
+        )
+        if check_proc.returncode != 0:
+            raise HTTPException(status_code=500, detail=f"rendercv not available: {check_proc.stderr}")
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=500, detail="rendercv check timed out")
+    except FileNotFoundError:
+        raise HTTPException(status_code=500, detail="rendercv module not found")
+
     with tempfile.TemporaryDirectory() as td:
         yaml_path = os.path.join(td, "resume.yaml")
         with open(yaml_path, "w", encoding="utf-8") as f:
             f.write(req.yaml)
 
+        # Debug: Check what's in the YAML file
+        print(f"YAML content: {req.yaml}", file=open(os.path.join(td, "debug.log"), "w"))
+
         # RenderCV -> PDF (requires TeX + latexmk in the container)
+        # Try the render command with different syntax
         proc = subprocess.run(
-            ["python", "-m", "rendercv", "render", yaml_path, "-o", td],
+            ["python", "-m", "rendercv", "render", yaml_path, "--output-folder", td],
             capture_output=True, text=True
         )
+
+        # If that fails, try alternative syntax
         if proc.returncode != 0:
-            raise HTTPException(status_code=500, detail=f"rendercv failed: {proc.stderr[:800]}")
+            proc = subprocess.run(
+                ["python", "-m", "rendercv", "render", yaml_path, "-o", td],
+                capture_output=True, text=True
+            )
+        if proc.returncode != 0:
+            error_msg = f"rendercv failed with return code {proc.returncode}"
+            if proc.stderr:
+                error_msg += f" | stderr: {proc.stderr[:800]}"
+            if proc.stdout:
+                error_msg += f" | stdout: {proc.stdout[:800]}"
+            raise HTTPException(status_code=500, detail=error_msg)
 
         # Find the produced PDF
         pdf_path = None
