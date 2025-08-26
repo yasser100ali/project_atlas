@@ -12,6 +12,7 @@ from pypdf import PdfReader
 from .utils.prompt import ClientMessage
 from .utils.attachment import Attachment
 from .agents.orchestrator import career_agent, create_ephemeral_session
+from .agents.resume_agent import get_successful_response_with_base64
 from agents import SQLiteSession  # type: ignore
 from agents import Runner, ItemHelpers  # type: ignore
 from openai.types.responses import ResponseTextDeltaEvent  # type: ignore
@@ -171,42 +172,57 @@ async def handle_chat_data(request: Request):
 
                                 if isinstance(parsed, dict):
                                     print(f"[resume_ready] parsed keys: {list(parsed.keys())}")
-                                    pdf_path = parsed.get("pdf_path")
-                                    if not pdf_path:
-                                        out_dir = parsed.get("output_folder")
-                                        fname = parsed.get("filename")
-                                        if isinstance(out_dir, str) and isinstance(fname, str):
-                                            pdf_path = os.path.join(out_dir, fname)
-                                    filename = parsed.get("filename") or "resume.pdf"
 
-                                    # Build URL. Prefer file path but allow base64 fallback if path not under base_dir
-                                    file_url = None
-                                    if isinstance(pdf_path, str):
-                                        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-                                        base_dir = os.path.abspath(os.path.join(project_root, "generated_resumes"))
-                                        real = os.path.abspath(pdf_path)
-                                        if real.startswith(base_dir) and os.path.exists(real):
-                                            file_url = f"/api/file?path={quote(real)}"
+                                    # Check if this is a clean success message - if so, get the real data from global
+                                    if (parsed.get("success") and parsed.get("has_base64") and
+                                        not parsed.get("pdf_b64")):
+                                        print(f"[DEBUG] Detected clean success message, checking for full response...")
+                                        full_response = get_successful_response_with_base64()
+                                        if full_response:
+                                            try:
+                                                parsed = json.loads(full_response)
+                                                print(f"[DEBUG] Using full response with base64 data")
+                                            except:
+                                                print(f"[DEBUG] Failed to parse full response")
+                                                parsed = None
+
+                                    if parsed:
+                                        pdf_path = parsed.get("pdf_path")
+                                        if not pdf_path:
+                                            out_dir = parsed.get("output_folder")
+                                            fname = parsed.get("filename")
+                                            if isinstance(out_dir, str) and isinstance(fname, str):
+                                                pdf_path = os.path.join(out_dir, fname)
+                                        filename = parsed.get("filename") or "resume.pdf"
+
+                                        # Build URL. Prefer file path but allow base64 fallback if path not under base_dir
+                                        file_url = None
+                                        if isinstance(pdf_path, str):
+                                            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+                                            base_dir = os.path.abspath(os.path.join(project_root, "generated_resumes"))
+                                            real = os.path.abspath(pdf_path)
+                                            if real.startswith(base_dir) and os.path.exists(real):
+                                                file_url = f"/api/file?path={quote(real)}"
+                                            else:
+                                                b64 = parsed.get("pdf_b64")
+                                                if isinstance(b64, str) and len(b64) > 0:
+                                                    file_url = f"data:application/pdf;base64,{b64}"
                                         else:
                                             b64 = parsed.get("pdf_b64")
                                             if isinstance(b64, str) and len(b64) > 0:
                                                 file_url = f"data:application/pdf;base64,{b64}"
-                                    else:
-                                        b64 = parsed.get("pdf_b64")
-                                        if isinstance(b64, str) and len(b64) > 0:
-                                            file_url = f"data:application/pdf;base64,{b64}"
 
-                                    print(f"\nHere is that pdf path: {pdf_path}\nHere is the filename: {filename}\nUsing URL: {file_url}\n\n")
-                                    if file_url:
-                                        last_pdf = {"url": file_url, "name": filename, "contentType": "application/pdf"}
-                                        print(f"[DEBUG] About to emit resume_ready event with data: {last_pdf}")
-                                        yield json.dumps({
-                                            "event": "resume_ready",
-                                            "data": last_pdf,
-                                        }) + "\n"
-                                        print(f"[resume_ready] emitted with url={file_url}")
-                                    else:
-                                        print("[resume_ready] No usable URL (no path and no b64)")
+                                        print(f"\nHere is that pdf path: {pdf_path}\nHere is the filename: {filename}\nUsing URL: {file_url}\n\n")
+                                        if file_url:
+                                            last_pdf = {"url": file_url, "name": filename, "contentType": "application/pdf"}
+                                            print(f"[DEBUG] About to emit resume_ready event with data: {last_pdf}")
+                                            yield json.dumps({
+                                                "event": "resume_ready",
+                                                "data": last_pdf,
+                                            }) + "\n"
+                                            print(f"[resume_ready] emitted with url={file_url}")
+                                        else:
+                                            print("[resume_ready] No usable URL (no path and no b64)")
                         except Exception as e:
                             print(f"\nError: {e}\n")
                             pass
