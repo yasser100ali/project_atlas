@@ -6,6 +6,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Global variable to store successful response with base64 data
+successful_response_with_base64 = ""
+
+def get_successful_response_with_base64():
+    """Get the successful response with base64 data for frontend processing"""
+    global successful_response_with_base64
+    return successful_response_with_base64
+
 resume_agent = Agent(
     name="ResumeAgent",
     model="gpt-4.1",
@@ -107,8 +115,10 @@ async def resume_builder(input_text: str) -> str:
     session = SQLiteSession("career_copilot_session")
     max_attempts = 3
     last_output = ""
-    original_successful_response = ""  # Store the original response with base64 data
     error_feedback = ""
+    # Global variable to store successful response with base64 data
+    global successful_response_with_base64
+    successful_response_with_base64 = ""
 
     for attempt in range(1, max_attempts + 1):
         augmented_input = input_text if not error_feedback else (
@@ -137,7 +147,7 @@ async def resume_builder(input_text: str) -> str:
                     parsed.get('returncode') == 0 and
                     ('pdf_b64' in parsed or 'pdf_path' in parsed)):
                     print(f"[DEBUG] Storing original successful response with base64 data")
-                    original_successful_response = raw_output
+                    successful_response_with_base64 = raw_output
             except json.JSONDecodeError:
                 pass
 
@@ -185,8 +195,14 @@ async def resume_builder(input_text: str) -> str:
         if returncode == 0 and (pdf_path or len(pdf_b64) > 0):
             print(f"[resume_builder] Attempt {attempt} success -> pdf_path={pdf_path}, has_b64={bool(pdf_b64)}")
             # Store the original successful response for returning to frontend
-            original_successful_response = raw_output
-            return raw_output
+            successful_response_with_base64 = raw_output
+            # Return a clean success message to the LLM (no base64 data)
+            return json.dumps({
+                "success": True,
+                "message": "Resume PDF generated successfully",
+                "filename": expected_filename,
+                "has_base64": len(pdf_b64) > 0
+            })
 
         # Create error feedback without the massive base64 data
         error_feedback_parts = [f"Render failed (returncode={returncode})."]
@@ -208,10 +224,26 @@ async def resume_builder(input_text: str) -> str:
         error_feedback = "\n".join(error_feedback_parts)
         print(f"[resume_builder] Attempt {attempt} failed: returncode={returncode}")
 
-    # After retries, return the original successful response if available, otherwise the last output
-    if original_successful_response:
-        print(f"[DEBUG] Returning original successful response with base64 data")
-        return original_successful_response
+    # After retries, return a clean success message if we had success, otherwise the last output
+    if successful_response_with_base64:
+        print(f"[DEBUG] Returning clean success message (base64 data preserved in global)")
+        # Extract filename from the original response for the success message
+        try:
+            parsed = json.loads(successful_response_with_base64)
+            filename = parsed.get("filename", "resume.pdf")
+            return json.dumps({
+                "success": True,
+                "message": "Resume PDF generated successfully",
+                "filename": filename,
+                "has_base64": True
+            })
+        except:
+            return json.dumps({
+                "success": True,
+                "message": "Resume PDF generated successfully",
+                "filename": "resume.pdf",
+                "has_base64": True
+            })
 
     print(f"[DEBUG] Returning last output (no successful render)")
     return last_output
