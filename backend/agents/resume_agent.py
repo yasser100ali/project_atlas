@@ -14,6 +14,21 @@ def get_successful_response_with_base64():
     global successful_response_with_base64
     return successful_response_with_base64
 
+def clean_base64_data(text, max_length=2000):
+    """Clean base64 data from text to prevent token limit issues"""
+    if not text:
+        return text
+
+    # Remove base64 data from JSON-like strings
+    if 'pdf_b64' in text:
+        text = text.split('pdf_b64')[0] + '...[base64_data_truncated]'
+
+    # Truncate if still too long
+    if len(text) > max_length:
+        text = text[:max_length] + '...[truncated_to_avoid_token_limit]'
+
+    return text
+
 resume_agent = Agent(
     name="ResumeAgent",
     model="gpt-4.1",
@@ -210,18 +225,12 @@ async def resume_builder(input_text: str) -> str:
         error_feedback_parts = [f"Render failed (returncode={returncode})."]
 
         if stderr and len(stderr) > 0:
-            # Truncate stderr but avoid including base64 data
-            clean_stderr = stderr[:2000]
-            if 'pdf_b64' in clean_stderr:
-                clean_stderr = clean_stderr.split('pdf_b64')[0] + '...[base64_data_truncated]'
-            error_feedback_parts.append(f"stderr (truncated): {clean_stderr}")
+            clean_stderr = clean_base64_data(stderr)
+            error_feedback_parts.append(f"stderr: {clean_stderr}")
 
         if stdout and len(stdout) > 0:
-            # Truncate stdout but avoid including base64 data
-            clean_stdout = stdout[:2000]
-            if 'pdf_b64' in clean_stdout or len(clean_stdout) > 10000:
-                clean_stdout = '...[output_truncated_to_avoid_token_limit]'
-            error_feedback_parts.append(f"stdout (truncated): {clean_stdout}")
+            clean_stdout = clean_base64_data(stdout, max_length=10000)
+            error_feedback_parts.append(f"stdout: {clean_stdout}")
 
         error_feedback = "\n".join(error_feedback_parts)
         print(f"[resume_builder] Attempt {attempt} failed: returncode={returncode}")
@@ -230,22 +239,19 @@ async def resume_builder(input_text: str) -> str:
     if successful_response_with_base64:
         print(f"[DEBUG] Returning clean success message (base64 data preserved in global)")
         # Extract filename from the original response for the success message
+        filename = "resume.pdf"  # Default fallback
         try:
             parsed = json.loads(successful_response_with_base64)
-            filename = parsed.get("filename", "resume.pdf")
-            return json.dumps({
-                "success": True,
-                "message": "Resume PDF generated successfully",
-                "filename": filename,
-                "has_base64": True
-            })
-        except:
-            return json.dumps({
-                "success": True,
-                "message": "Resume PDF generated successfully",
-                "filename": "resume.pdf",
-                "has_base64": True
-            })
+            filename = parsed.get("filename", filename)
+        except Exception:
+            pass  # Use default filename
+
+        return json.dumps({
+            "success": True,
+            "message": "Resume PDF generated successfully",
+            "filename": filename,
+            "has_base64": True
+        })
 
     print(f"[DEBUG] Returning last output (no successful render)")
     return last_output
