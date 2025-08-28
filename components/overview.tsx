@@ -20,9 +20,9 @@ export const Overview = () => {
           <span>+</span>
           <MessageIcon size={32} />
         </p>
-        <p className="text-xl font-semibold">Apex AI</p>
+        <p className="text-xl font-semibold">Career Titan</p>
         <p>
-          Personal agents for peak productivity. Apex AI builds task-focused
+          Personal agents for peak productivity. Career Titan builds task-focused
           agents for job discovery, resume crafting, research, and outreach—so
           you move faster with less friction.
         </p>
