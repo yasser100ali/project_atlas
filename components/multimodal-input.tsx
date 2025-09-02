@@ -59,7 +59,9 @@ export function MultimodalInput({
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isPageDragOver, setIsPageDragOver] = useState(false);
+  const [dragCounter, setDragCounter] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const wasPageDragOverRef = useRef(false);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -131,16 +133,31 @@ export function MultimodalInput({
     setAttachments((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
+  // Prevent default behavior on attachment removal
+  const handleRemoveAttachment = (e: React.MouseEvent, indexToRemove: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    removeAttachment(indexToRemove);
+  };
+
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragOver(true);
+    // Only set drag over if dragging files
+    if (e.dataTransfer?.types.includes('Files')) {
+      setIsDragOver(true);
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragOver(false);
+    // Use setTimeout to prevent flickering when moving between child elements
+    setTimeout(() => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+        setIsDragOver(false);
+      }
+    }, 10);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -152,6 +169,8 @@ export function MultimodalInput({
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
+    setIsPageDragOver(false);
+    setDragCounter(0);
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       setAttachments((prev) => [...prev, ...Array.from(files)]);
@@ -162,22 +181,38 @@ export function MultimodalInput({
   useEffect(() => {
     const onWindowDragEnter = (e: DragEvent) => {
       e.preventDefault();
-      setIsPageDragOver(true);
+      setDragCounter((prev) => prev + 1);
+      if (e.dataTransfer?.types.includes('Files')) {
+        setIsPageDragOver(true);
+        wasPageDragOverRef.current = true;
+      }
     };
     const onWindowDragOver = (e: DragEvent) => {
       e.preventDefault();
     };
     const onWindowDrop = (e: DragEvent) => {
       e.preventDefault();
+      setDragCounter(0);
       setIsPageDragOver(false);
+      // Only handle drops when page overlay is active (dropping in empty space)
+      // Local component drops are handled by the component's own drop handler
       const files = e.dataTransfer?.files;
-      if (files && files.length > 0) {
+      if (files && files.length > 0 && wasPageDragOverRef.current) {
         setAttachments((prev) => [...prev, ...Array.from(files)]);
       }
+      wasPageDragOverRef.current = false;
     };
     const onWindowDragLeave = (e: DragEvent) => {
       e.preventDefault();
-      setIsPageDragOver(false);
+      setDragCounter((prev) => {
+        const newCounter = prev - 1;
+        if (newCounter <= 0) {
+          setIsPageDragOver(false);
+          wasPageDragOverRef.current = false;
+          return 0;
+        }
+        return newCounter;
+      });
     };
 
     window.addEventListener("dragenter", onWindowDragEnter);
@@ -250,13 +285,23 @@ export function MultimodalInput({
             e.preventDefault();
             const files = e.dataTransfer.files;
             setIsPageDragOver(false);
+            setDragCounter(0);
+            wasPageDragOverRef.current = false;
             if (files && files.length > 0) {
               setAttachments((prev) => [...prev, ...Array.from(files)]);
             }
           }}
           onDragLeave={(e) => {
             e.preventDefault();
-            setIsPageDragOver(false);
+            setDragCounter((prev) => {
+              const newCounter = prev - 1;
+              if (newCounter <= 0) {
+                setIsPageDragOver(false);
+                wasPageDragOverRef.current = false;
+                return 0;
+              }
+              return newCounter;
+            });
           }}
         >
           <div className="rounded-2xl border-2 border-dashed border-foreground/40 px-6 py-4 text-sm">
@@ -268,7 +313,7 @@ export function MultimodalInput({
         <div className="flex gap-2 flex-wrap">
           {attachments.map((file, index) => (
             <motion.div
-              key={index}
+              key={`${file.name}-${file.size}-${index}`}
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="relative bg-muted p-2 rounded-lg flex items-center gap-2 text-sm"
@@ -278,7 +323,7 @@ export function MultimodalInput({
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6 rounded-full flex-shrink-0"
-                onClick={() => removeAttachment(index)}
+                onClick={(e) => handleRemoveAttachment(e, index)}
               >
                 <X className="h-4 w-4" />
               </Button>
