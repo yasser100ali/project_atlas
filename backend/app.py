@@ -11,8 +11,8 @@ from urllib.parse import quote
 from pypdf import PdfReader
 from .utils.prompt import ClientMessage
 from .utils.attachment import Attachment
-from .agents.orchestrator import career_agent, create_ephemeral_session
-from .agents.resume_agent import get_successful_response_with_base64
+from .agents.orchestrator import atlas_agent, create_ephemeral_session
+# from .agents.resume_agent import get_successful_response_with_base64
 from agents import SQLiteSession  # type: ignore
 from agents import Runner, ItemHelpers  # type: ignore
 from openai.types.responses import ResponseTextDeltaEvent  # type: ignore
@@ -106,7 +106,7 @@ async def handle_chat_data(request: Request):
                 session = create_ephemeral_session()
                 SESSIONS[chat_id] = session
 
-            result = Runner.run_streamed(career_agent, input=combined_text, session=session)
+            result = Runner.run_streamed(atlas_agent, input=combined_text, session=session)
 
             accumulated_text = ""
             last_pdf: Optional[dict] = None
@@ -174,17 +174,17 @@ async def handle_chat_data(request: Request):
                                     print(f"[resume_ready] parsed keys: {list(parsed.keys())}")
 
                                     # Check if this is a clean success message - if so, get the real data from global
-                                    if (parsed.get("success") and parsed.get("has_base64") and
-                                        not parsed.get("pdf_b64")):
-                                        print(f"[DEBUG] Detected clean success message, checking for full response...")
-                                        full_response = get_successful_response_with_base64()
-                                        if full_response:
-                                            try:
-                                                parsed = json.loads(full_response)
-                                                print(f"[DEBUG] Using full response with base64 data")
-                                            except:
-                                                print(f"[DEBUG] Failed to parse full response")
-                                                parsed = None
+                                    # if (parsed.get("success") and parsed.get("has_base64") and
+                                    #     not parsed.get("pdf_b64")):
+                                    #     print(f"[DEBUG] Detected clean success message, checking for full response...")
+                                    #     full_response = get_successful_response_with_base64()
+                                    #     if full_response:
+                                    #         try:
+                                    #             parsed = json.loads(full_response)
+                                    #             print(f"[DEBUG] Using full response with base64 data")
+                                    #         except:
+                                    #             print(f"[DEBUG] Failed to parse full response")
+                                    #             parsed = None
 
                                     if parsed:
                                         pdf_path = parsed.get("pdf_path")
