@@ -8,10 +8,9 @@ from dotenv import load_dotenv
 from agents import Agent, Runner, SQLiteSession, function_tool, WebSearchTool
 from typing import Dict, Any
 
+from .research_agent import run_research
+from .pdf_agent import run_pdf_analysis
 load_dotenv()
-
-
-
 
 
 
@@ -50,7 +49,7 @@ atlas_agent = Agent(
         When users ask what you do, explain that you're Atlas - an AI assistant for document analysis and web research.
     """,
     model="gpt-4.1",
-    tools=[analyze_pdf, conduct_research, WebSearchTool()],
+    tools=[run_pdf_analysis, run_research, WebSearchTool()],
 )
 
 def create_ephemeral_session() -> SQLiteSession:

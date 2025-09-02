@@ -1,20 +1,22 @@
-# Apex AI – Career Titan. 
+# Atlas AI Assistant
 
-Agentic resume copilot that drafts and renders tailored resumes and searches jobs, with real‑time streaming UX.
+Intelligent document analysis and web research assistant powered by OpenAI Agents SDK. Atlas can analyze PDF documents, conduct comprehensive web research, and provide evidence-based insights with real-time streaming responses.
 
-## Tech stack
+## Tech Stack
 
-- Frontend: Next.js (React 18), Tailwind, NDJSON streaming client
-- Backend: FastAPI (Python), OpenAI Agents SDK (agentic orchestration)
-- Tools: RenderCV renderer (PDF generation), JSearch/RapidAPI (job search)
-- Deploy: Vercel (dev/prod friendly). Portable to Render/AWS (ECS) with S3 storage
+- **Frontend**: Next.js (React 18), Tailwind CSS, NDJSON streaming client
+- **Backend**: FastAPI (Python), OpenAI Agents SDK (agentic orchestration)
+- **AI Agents**: PDF Analysis Agent, Research Agent, Web Search capabilities
+- **Deployment**: Vercel (dev/prod friendly), portable to Render/AWS
 
 ## Features
 
-- Agentic workflow: top‑level agent chooses between job search and resume build tools; automatic YAML repair/retry on render errors
-- Live streaming: run‑item events (tool call/output/message) and token deltas to the UI
-- Inline PDF viewer: resume is embedded above the assistant message with Open/Download actions
-- Robust file delivery: local via `/api/file` (allowlisted paths), serverless via data URL, or S3 signed URLs
+- **Document Analysis**: Upload and analyze PDF documents with intelligent question-answering
+- **Web Research**: Conduct comprehensive research using web search with multiple reputable sources
+- **Agentic Workflow**: Intelligent agent orchestration that chooses appropriate tools for each task
+- **Real-time Streaming**: Live streaming of agent thoughts, tool calls, and responses
+- **Evidence-based Responses**: Citations and sources included in research results
+- **Modern UI**: Clean, responsive interface built with Next.js and Tailwind CSS
 
 ## Getting started (local dev)
 
@@ -27,9 +29,7 @@ pip install -r requirements.txt
 2) Configure environment variables in `.env`
 ```bash
 OPENAI_API_KEY=sk-...
-RAPIDAPI_KEY=...
-# Optional: persistent output dir; defaults to project dir or /tmp on serverless
-RESUME_OUT_DIR=generated_resumes
+# Optional: other configuration variables as needed
 ```
 
 3) Run both servers
@@ -40,26 +40,58 @@ Frontend: http://localhost:3000  |  Backend: http://localhost:8000
 
 ## API
 
-- `POST /api/chat` – NDJSON stream of agent events and final text
-  - Events: `{event:"thinking"|"final"|"resume_ready"|"error", ...}`
-  - `resume_ready.data` contains `{url, name, contentType}` for the rendered PDF
-- `GET /api/file?path=/abs/path.pdf` – serves PDFs from allowlisted directories (project `generated_resumes/` and `/tmp/generated_resumes`)
+- `POST /api/chat` – NDJSON stream of agent events and responses
+  - Events: `{event:"thinking"|"tool_call"|"tool_output"|"final"|"error", ...}`
+  - Handles both PDF analysis queries and web research requests
+  - Returns structured JSON responses with sources and evidence
 
-## Storage & portability
+## Architecture
 
-- Local/Vercel: writes to `generated_resumes/` (local) or `/tmp/generated_resumes` (serverless)
-- For Render/AWS: set `RESUME_OUT_DIR` to a mounted disk or switch to S3 and return signed URLs
+- **Orchestrator Agent**: Routes requests to appropriate specialized agents
+- **PDF Analysis Agent**: Processes uploaded documents and answers questions about content
+- **Research Agent**: Conducts web research using search tools and summarizes findings
+- **Web Search Tool**: Integrated search capabilities for gathering current information
 
-## Notes
+## Usage Examples
 
-- We avoid putting large base64 blobs in model streams to stay within token limits; the UI receives a link (file route or data URL) via `resume_ready`
-- The streaming channel is NDJSON; switch to SSE if your proxy buffers NDJSON in production
+### Document Analysis
+```
+Upload a PDF and ask: "What are the main findings in this research paper?"
+```
+
+### Web Research
+```
+Ask: "What are the latest developments in artificial intelligence for 2024?"
+```
+
+### Combined Queries
+```
+Ask: "Compare the approaches in this PDF document with current industry standards"
+```
 
 ## Scripts
 
 - `npm run dev` – Next.js + FastAPI concurrently
 - `npm run next-dev` – Next.js only
 - `npm run fastapi-dev` – FastAPI only
+
+## Project Structure
+
+```
+├── app/                    # Next.js frontend
+├── backend/
+│   ├── agents/            # AI agents (orchestrator, research, pdf)
+│   ├── app.py            # FastAPI application
+│   └── utils/            # Utilities and tools
+├── components/            # React components
+└── lib/                   # Shared utilities
+```
+
+## Recent Updates
+
+- Fixed OpenAI Agents SDK schema validation issues for strict JSON compliance
+- Updated function tools to use JSON string serialization for agent communication
+- Improved error handling and streaming responses
 
 ## License
 

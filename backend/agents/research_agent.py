@@ -20,16 +20,22 @@ def _normalize_url(u: str) -> str:
 
 @function_tool
 def summarize_research(
-    findings: List[Dict[str, Any]],
+    findings: str,  # Changed from List[Dict[str, Any]] to str for JSON compatibility
     query: str,
     focus_area: str = "",
     max_sources: int = 8,
     max_bullets: int = 8,
     max_snippet_chars: int = 240
-) -> Dict[str, Any]:
+) -> str:  # Changed return type to str for JSON compatibility
     """
     TERMINAL step: normalize & compress findings and return the final JSON.
     """
+    # Parse JSON string to list of dicts
+    try:
+        findings = json.loads(findings) if isinstance(findings, str) else findings
+    except json.JSONDecodeError:
+        findings = []
+
     if not isinstance(findings, list):
         findings = []
 
@@ -77,7 +83,7 @@ def summarize_research(
 
     answer = " ".join(lines)[:1500]
 
-    return {
+    result = {
         "success": True,
         "query": query,
         "focus_area": focus_area,
@@ -86,6 +92,8 @@ def summarize_research(
         "sources": [{"title": c["title"], "url": c["url"]} for c in cleaned],
         "status": "final"
     }
+
+    return json.dumps(result)
 
 research_agent = Agent(
     name="Research_Assistant",
@@ -100,7 +108,7 @@ research_agent = Agent(
     - title (string)
     - url (string)
     - snippet (short 1–3 sentence summary)
-    3) Call summarize_research(findings=findings, query="<original query>", focus_area="<if any>")
+    3) Call summarize_research(findings=json.dumps(findings), query="<original query>", focus_area="<if any>")
     EXACTLY ONCE. This is your FINAL step.
 
     CONSTRAINTS
@@ -126,8 +134,7 @@ async def run_research(query: str, focus_area: str = "", max_steps: int = 8) -> 
     result = await Runner.run(
         research_agent,
         task,
-        session=session,
-        run_config={"max_steps": max_steps}
+        session=session
     )
 
     out = (result.final_output or "").strip()
