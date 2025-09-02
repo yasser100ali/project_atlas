@@ -17,7 +17,12 @@ from agents import SQLiteSession  # type: ignore
 from agents import Runner, ItemHelpers  # type: ignore
 from openai.types.responses import ResponseTextDeltaEvent  # type: ignore
 
-load_dotenv(".env")
+# Load environment variables from .env file if it exists
+try:
+    load_dotenv(".env")
+except Exception as e:
+    print(f"[DEBUG] Could not load .env file: {e}")
+    # Continue without .env file
 
 # Debug environment variables
 print(f"[DEBUG] Environment variables:")

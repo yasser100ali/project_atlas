@@ -10,116 +10,44 @@ from typing import Dict, Any
 
 load_dotenv()
 
-@function_tool
-def analyze_pdf(pdf_text: str, query: str) -> Dict[str, Any]:
-    """
-    Analyze PDF content based on user's query.
 
-    Args:
-        pdf_text: The extracted text from the PDF
-        query: User's specific question about the PDF
 
-    Returns:
-        Analysis results
-    """
-    return {
-        "tool": "pdf_analyzer",
-        "pdf_length": len(pdf_text),
-        "query": query,
-        "analysis": "PDF analysis would be performed here"
-    }
 
-@function_tool
-async def conduct_research(query: str, research_type: str = "general") -> Dict[str, Any]:
-    """
-    Conduct research on a given topic.
-
-    Args:
-        query: The research question or topic
-        research_type: Type of research needed
-
-    Returns:
-        Research results
-    """
-    # Import the research agent here to avoid circular imports
-    from .research_agent import research_agent, conduct_research as research_conduct_research
-
-    # Actually perform research using the research agent
-    try:
-        # Create a session for the research
-        research_session = create_ephemeral_session()
-
-        # Run the research agent
-        research_input = f"Conduct {research_type} research on: {query}"
-        result = await Runner.run(research_agent, input=research_input, session=research_session)
-
-        # Extract the final response
-        if hasattr(result, 'final_output') and result.final_output:
-            return {
-                "tool": "research_conductor",
-                "query": query,
-                "research_type": research_type,
-                "findings": result.final_output,
-                "status": "completed"
-            }
-        else:
-            return {
-                "tool": "research_conductor",
-                "query": query,
-                "research_type": research_type,
-                "findings": "Research completed but no specific findings extracted",
-                "status": "completed"
-            }
-    except Exception as e:
-        return {
-            "tool": "research_conductor",
-            "query": query,
-            "research_type": research_type,
-            "findings": f"Research failed: {str(e)}",
-            "status": "error"
-        }
 
 
 atlas_agent = Agent(
     name="AtlasAssistant",
     instructions="""
-        You are Atlas, an intelligent assistant that specializes in document analysis, research, and career/financial guidance.
+        You are Atlas, an intelligent assistant that specializes in document analysis and research.
 
-        **Agent Selection Guidelines:**
+        **Core Capabilities:**
 
-        1. **Use PDF Agent when:**
-           - User uploads or mentions analyzing a PDF document
-           - User wants to extract information from a document
-           - User asks questions about PDF content (resumes, reports, articles, contracts)
-           - User wants summaries, insights, or analysis of document content
+        1. **PDF Analysis:**
+           - Analyze PDF documents and extract key information
+           - Answer questions about PDF content
+           - Provide summaries and insights from documents
+           - Handle various document types (reports, articles, contracts, etc.)
 
-        2. **Use Research Agent when:**
-           - User asks to research a topic, company, or industry
-           - User needs information gathering from the web
-           - User wants market research, salary data, or industry trends
-           - User asks for current information or statistics
+        2. **Web Research:**
+           - Conduct research on any topic using web search
+           - Gather current information and statistics
+           - Provide balanced perspectives on topics
+           - Include relevant sources when possible
 
-        3. **Handle as Career Coach when:**
-           - User asks about career planning, job search strategies
-           - User needs help figuring out career goals (short-term and long-term)
-           - User feels lost about their career direction
-           - User wants advice on career transitions or skill development
-
-        4. **Handle as Financial Advisor when:**
-           - User asks about investments, savings, or financial planning
-           - User wants advice on mutual funds, stocks, or retirement planning
-           - User needs help understanding compound interest or investment returns
-           - User asks about long-term wealth building strategies
-
-        **Key Behaviors:**
-        - Detect PDF content in user messages and automatically engage PDF analysis
-        - Use WebSearchTool when research or current information is needed
+        **How to Use Tools:**
+        - For PDF-related requests: Use the analyze_pdf tool to process document content
+        - For research requests: Use WebSearchTool directly to gather information
+        - Do NOT call conduct_research function tool - use WebSearchTool instead
         - Ask clarifying questions when user intent is unclear
-        - Provide concise, actionable advice
-        - Use markdown formatting and tables for clarity
-        - Keep responses focused and efficient
 
-        When users ask what you do, explain that you're Atlas - an AI assistant for document analysis, research, career planning, and financial guidance.
+        **Response Guidelines:**
+        - Provide clear, well-structured responses
+        - Use markdown formatting when appropriate
+        - Include sources when providing research information
+        - Keep responses focused and efficient
+        - Be objective and evidence-based in your findings
+
+        When users ask what you do, explain that you're Atlas - an AI assistant for document analysis and web research.
     """,
     model="gpt-4.1",
     tools=[analyze_pdf, conduct_research, WebSearchTool()],
@@ -131,7 +59,7 @@ def create_ephemeral_session() -> SQLiteSession:
     This avoids ballooning token counts across requests and effectively
     resets memory on each page refresh.
     """
-    return SQLiteSession(f"career_copilot_session_{uuid4().hex}")
+    return SQLiteSession(f"atlas_session_{uuid4().hex}")
 
 
 async def stream_agent(user_text: str):

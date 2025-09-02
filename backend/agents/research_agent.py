@@ -1,79 +1,147 @@
-from agents import Agent, function_tool, WebSearchTool
+
+# agents/research_agent.py
+from agents import Agent, function_tool, WebSearchTool, Runner, SQLiteSession
 from typing import Dict, Any, List
-import json
+from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
+from dotenv import load_dotenv
+import json, uuid
+
+load_dotenv()
+
+def _normalize_url(u: str) -> str:
+    try:
+        p = urlparse(u)
+        # strip tracking params
+        qs = [(k, v) for k, v in parse_qsl(p.query, keep_blank_values=True)
+              if k.lower() not in {"utm_source","utm_medium","utm_campaign","utm_term","utm_content","gclid","fbclid"}]
+        return urlunparse((p.scheme, p.netloc, p.path, "", urlencode(qs), ""))
+    except Exception:
+        return u
 
 @function_tool
-def conduct_research(query: str, research_type: str = "general") -> Dict[str, Any]:
+def summarize_research(
+    findings: List[Dict[str, Any]],
+    query: str,
+    focus_area: str = "",
+    max_sources: int = 8,
+    max_bullets: int = 8,
+    max_snippet_chars: int = 240
+) -> Dict[str, Any]:
     """
-    Conducts web research based on the user's query.
-
-    Args:
-        query: The research question or topic to investigate
-        research_type: Type of research (general, career, financial, technical, etc.)
-
-    Returns:
-        Dict containing research results and findings
+    TERMINAL step: normalize & compress findings and return the final JSON.
     """
-    # This function serves as a trigger for the research agent to use WebSearchTool
-    # The actual research will be performed by the agent's WebSearchTool
+    if not isinstance(findings, list):
+        findings = []
+
+    # Dedupe by normalized URL then by title
+    seen_urls, seen_titles, cleaned = set(), set(), []
+    for f in findings:
+        title = (f.get("title") or "").strip() or (f.get("url") or "Source")
+        url = _normalize_url((f.get("url") or "").strip())
+        snippet = (f.get("snippet") or f.get("summary") or "").strip()
+
+        key_url = url.lower()
+        key_title = title.lower()
+
+        if key_url and key_url in seen_urls: 
+            continue
+        if key_title in seen_titles:
+            continue
+
+        seen_urls.add(key_url)
+        seen_titles.add(key_title)
+
+        cleaned.append({
+            "title": title[:200],
+            "url": url,
+            "snippet": snippet[:max_snippet_chars]
+        })
+        if len(cleaned) >= max_sources:
+            break
+
+    # Key insights: short bullets from snippets/titles
+    bullets: List[str] = []
+    for c in cleaned[:max_bullets]:
+        base = c["snippet"] or c["title"]
+        bullets.append(base.strip())
+
+    # Compose a short final answer (4–8 sentences max-ish)
+    lines = []
+    if focus_area:
+        lines.append(f"Focus: {focus_area}.")
+    # Use up to ~5 bullets to craft succinct sentences
+    for b in bullets[:5]:
+        # ensure each bullet is a sentence-like chunk
+        s = b.rstrip(".;:")
+        lines.append(s + ".")
+
+    answer = " ".join(lines)[:1500]
+
     return {
-        "research_type": research_type,
+        "success": True,
         "query": query,
-        "status": "research_initiated",
-        "message": f"Starting {research_type} research on: {query}",
-        "findings": []
-    }
-
-@function_tool
-def summarize_research(findings: List[Dict[str, Any]], focus_area: str = "") -> Dict[str, Any]:
-    """
-    Summarizes research findings into key insights.
-
-    Args:
-        findings: List of research results to summarize
-        focus_area: Specific area to focus the summary on
-
-    Returns:
-        Dict containing summarized research insights
-    """
-    return {
-        "summary_type": "research_summary",
         "focus_area": focus_area,
-        "key_insights": [],
-        "status": "summarized"
+        "answer": answer,
+        "key_insights": bullets,
+        "sources": [{"title": c["title"], "url": c["url"]} for c in cleaned],
+        "status": "final"
     }
 
 research_agent = Agent(
     name="Research_Assistant",
+    model="gpt-4.1",
+    tools=[WebSearchTool(), summarize_research],
     instructions="""
-    You are a specialized research agent. Your role is to:
+    You are a research agent.
 
-    1. Conduct thorough web research on topics requested by users
-    2. Gather information from reliable sources using WebSearchTool
-    3. Provide comprehensive yet concise research summaries
-    4. Help users understand complex topics through research
+    WORKFLOW
+    1) Use WebSearchTool to gather 5–12 relevant, reputable, and recent items for the user's topic.
+    2) Build a Python list named `findings` where each item is a dict with keys:
+    - title (string)
+    - url (string)
+    - snippet (short 1–3 sentence summary)
+    3) Call summarize_research(findings=findings, query="<original query>", focus_area="<if any>")
+    EXACTLY ONCE. This is your FINAL step.
 
-    Research capabilities:
-    - Career research: job markets, salary data, industry trends
-    - Financial research: investment options, market analysis, economic trends
-    - Technical research: programming, tools, technologies
-    - General research: any topic requiring web-based information gathering
+    CONSTRAINTS
+    - Do not echo or create meta-instructions like “Please conduct research…”.
+    - After calling summarize_research, DO NOT send any more messages or call any more tools.
+    - Keep the answer neutral, concise, and evidence-based.
+    - Prefer sources with clear authority; include a mix if viewpoints differ.
 
-    IMPORTANT: When you receive a request to conduct research:
-    1. Always use the WebSearchTool to gather current information from the web
-    2. Search for the specific topic requested
-    3. Gather information from multiple reliable sources
-    4. Provide balanced perspectives on controversial topics
-    5. Include relevant statistics and data points when available
-    6. Structure your response clearly with headings and bullet points
-    7. Cite sources when possible
-    8. Be objective and evidence-based in your findings
-    9. Keep responses focused and comprehensive but not overwhelming
-
-    Do NOT just call conduct_research tool - use WebSearchTool directly to gather information.
-    Only use conduct_research when you need to trigger a research workflow.
-    Always perform actual web searches using WebSearchTool for any research request.
-    """,
-    tools=[conduct_research, summarize_research, WebSearchTool()],
-    model="gpt-4.1"
+    OUTPUT
+    - The tool result from summarize_research is the final JSON payload for the caller.
+    """
 )
+
+# Optional: a convenience tool callable by an orchestrator, similar to your resume_builder
+@function_tool(name_override="run_research")
+async def run_research(query: str, focus_area: str = "", max_steps: int = 8) -> str:
+    """
+    Runs the research workflow and returns the final JSON string produced by summarize_research.
+    """
+    session = SQLiteSession(f"research_session_{uuid.uuid4().hex}")
+    task = f"User query: {query}\nFocus area: {focus_area or '(general)'}"
+
+    result = await Runner.run(
+        research_agent,
+        task,
+        session=session,
+        run_config={"max_steps": max_steps}
+    )
+
+    out = (result.final_output or "").strip()
+    # Ensure we always return JSON
+    try:
+        json.loads(out)
+        return out
+    except Exception:
+        return json.dumps({
+            "success": False,
+            "query": query,
+            "focus_area": focus_area,
+            "answer": out[:1500],
+            "key_insights": [],
+            "sources": [],
+            "status": "final"
+        })
