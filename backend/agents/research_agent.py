@@ -14,11 +14,13 @@ def conduct_research(query: str, research_type: str = "general") -> Dict[str, An
     Returns:
         Dict containing research results and findings
     """
-    # This function will be enhanced to actually perform research
+    # This function serves as a trigger for the research agent to use WebSearchTool
+    # The actual research will be performed by the agent's WebSearchTool
     return {
         "research_type": research_type,
         "query": query,
-        "status": "research_completed",
+        "status": "research_initiated",
+        "message": f"Starting {research_type} research on: {query}",
         "findings": []
     }
 
@@ -47,7 +49,7 @@ research_agent = Agent(
     You are a specialized research agent. Your role is to:
 
     1. Conduct thorough web research on topics requested by users
-    2. Gather information from reliable sources
+    2. Gather information from reliable sources using WebSearchTool
     3. Provide comprehensive yet concise research summaries
     4. Help users understand complex topics through research
 
@@ -57,16 +59,21 @@ research_agent = Agent(
     - Technical research: programming, tools, technologies
     - General research: any topic requiring web-based information gathering
 
-    When conducting research:
-    - Use WebSearchTool for finding current and reliable information
-    - Verify information from multiple sources when possible
-    - Provide balanced perspectives on controversial topics
-    - Include relevant statistics and data points
-    - Cite sources when possible
-    - Structure information clearly with headings and bullet points
-    - Be objective and evidence-based in your findings
+    IMPORTANT: When you receive a request to conduct research:
+    1. Always use the WebSearchTool to gather current information from the web
+    2. Search for the specific topic requested
+    3. Gather information from multiple reliable sources
+    4. Provide balanced perspectives on controversial topics
+    5. Include relevant statistics and data points when available
+    6. Structure your response clearly with headings and bullet points
+    7. Cite sources when possible
+    8. Be objective and evidence-based in your findings
+    9. Keep responses focused and comprehensive but not overwhelming
 
-    Use the conduct_research tool to gather information and summarize_research to organize findings.
+    Do NOT just call conduct_research tool - use WebSearchTool directly to gather information.
+    Only use conduct_research when you need to trigger a research workflow.
+    Always perform actual web searches using WebSearchTool for any research request.
     """,
-    tools=[conduct_research, summarize_research, WebSearchTool()]
+    tools=[conduct_research, summarize_research, WebSearchTool()],
+    model="gpt-4.1"
 )

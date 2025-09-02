@@ -30,7 +30,7 @@ def analyze_pdf(pdf_text: str, query: str) -> Dict[str, Any]:
     }
 
 @function_tool
-def conduct_research(query: str, research_type: str = "general") -> Dict[str, Any]:
+async def conduct_research(query: str, research_type: str = "general") -> Dict[str, Any]:
     """
     Conduct research on a given topic.
 
@@ -41,12 +41,43 @@ def conduct_research(query: str, research_type: str = "general") -> Dict[str, An
     Returns:
         Research results
     """
-    return {
-        "tool": "research_conductor",
-        "query": query,
-        "research_type": research_type,
-        "findings": "Research would be conducted here using web search"
-    }
+    # Import the research agent here to avoid circular imports
+    from .research_agent import research_agent, conduct_research as research_conduct_research
+
+    # Actually perform research using the research agent
+    try:
+        # Create a session for the research
+        research_session = create_ephemeral_session()
+
+        # Run the research agent
+        research_input = f"Conduct {research_type} research on: {query}"
+        result = await Runner.run(research_agent, input=research_input, session=research_session)
+
+        # Extract the final response
+        if hasattr(result, 'final_output') and result.final_output:
+            return {
+                "tool": "research_conductor",
+                "query": query,
+                "research_type": research_type,
+                "findings": result.final_output,
+                "status": "completed"
+            }
+        else:
+            return {
+                "tool": "research_conductor",
+                "query": query,
+                "research_type": research_type,
+                "findings": "Research completed but no specific findings extracted",
+                "status": "completed"
+            }
+    except Exception as e:
+        return {
+            "tool": "research_conductor",
+            "query": query,
+            "research_type": research_type,
+            "findings": f"Research failed: {str(e)}",
+            "status": "error"
+        }
 
 
 atlas_agent = Agent(
