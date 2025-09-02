@@ -21,18 +21,7 @@ import { ArrowUpIcon, StopIcon } from "./icons";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 
-const suggestedActions = [
-  {
-    title: "Help me build my resume",
-    label: "from my experience",
-    action: "Help me build my resume",
-  },
-  {
-    title: "Find jobs in the Bay",
-    label: "for AI Engineers",
-    action: "Find jobs in the Bay for AI Engineers",
-  },
-];
+
 
 export function MultimodalInput({
   chatId,
@@ -298,35 +287,7 @@ export function MultimodalInput({
         </div>
       )}
 
-      {messages.length === 0 && attachments.length === 0 && (
-        <div className="grid sm:grid-cols-2 gap-2 w-full">
-          {suggestedActions.map((suggestedAction, index) => (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ delay: 0.05 * index }}
-              key={`suggested-action-${suggestedAction.title}-${index}`}
-              className={index > 1 ? "hidden sm:block" : "block"}
-            >
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  handleSubmit?.(undefined, {
-                    contentOverride: suggestedAction.action,
-                  });
-                }}
-                className="text-left border rounded-xl px-4 py-3.5 text-sm flex-1 gap-1 sm:flex-col w-full h-auto justify-start items-start"
-              >
-                <span className="font-medium">{suggestedAction.title}</span>
-                <span className="text-muted-foreground">
-                  {suggestedAction.label}
-                </span>
-              </Button>
-            </motion.div>
-          ))}
-        </div>
-      )}
+
 
       <div
         className={cn(

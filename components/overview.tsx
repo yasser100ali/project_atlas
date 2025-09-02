@@ -20,11 +20,11 @@ export const Overview = () => {
           <span>+</span>
           <MessageIcon size={32} />
         </p>
-        <p className="text-xl font-semibold">Career Titan</p>
+        <p className="text-xl font-semibold">Project Atlas</p>
         <p>
-          Personal agents for peak productivity. Career Titan builds task-focused
-          agents for job discovery, resume crafting, research, and outreach—so
-          you move faster with less friction.
+          Intelligent AI assistant for comprehensive analysis and guidance. Atlas specializes in
+          PDF document analysis, web research, career coaching, and financial planning—so
+          you get expert insights with AI-powered precision.
         </p>
         <p>
           Powered by Python (FastAPI) and modern React with streaming for a
