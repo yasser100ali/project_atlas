@@ -23,7 +23,7 @@ export const Overview = () => {
         <p className="text-xl font-semibold">Project Atlas</p>
         <p>
           Intelligent AI assistant for comprehensive analysis and guidance. Atlas specializes in
-          PDF document analysis, web research, career coaching, and financial planning—so
+          PDF document analysis and advanced web research so 
           you get expert insights with AI-powered precision.
         </p>
         <p>
