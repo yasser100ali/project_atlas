@@ -12,7 +12,7 @@ load_dotenv()
 research_agent = Agent(
     name="Research_Assistant",
     model="o4-mini-deep-research",
-    tools=[],
+    tools=["web_search_preview"],
     instructions="""
     You are a Deep Research agent.
 
@@ -30,6 +30,8 @@ research_agent = Agent(
     - No meta-instructions (e.g., “Please conduct research…”).
     - Prefer authoritative and recent sources when recency matters.
     - Keep the synthesis concise, neutral, and evidence-based.
+
+    When you are done, write END OF RESEARCH. 
     """
 )
 

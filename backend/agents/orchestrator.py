@@ -2,13 +2,14 @@ import asyncio
 import json
 from uuid import uuid4
 
+from anyio import run_process
 from dotenv import load_dotenv
 
 # OpenAI Agents SDK
 from agents import Agent, Runner, SQLiteSession, function_tool, WebSearchTool
 from typing import Dict, Any
 
-from .research_agent import run_research
+from .research_agent import run_research, research_agent
 from .pdf_agent import run_pdf_analysis
 load_dotenv()
 
@@ -33,11 +34,17 @@ atlas_agent = Agent(
            - Provide balanced perspectives on topics
            - Include relevant sources when possible
 
-        **How to Use Tools:**
+        **How to Use Tools and Handoffs:**
         - For PDF-related requests: Use the analyze_pdf tool to process document content
-        - For research requests: Use WebSearchTool directly to gather information
-        - Do NOT call conduct_research function tool - use WebSearchTool instead
+        - For research requests: Handoff to the research_agent
+        - For simple web searches: Use WebSearchTool directly
         - Ask clarifying questions when user intent is unclear
+
+        **When to Use Handoffs:**
+        - Use research_agent handoff for complex research tasks that require multiple sources
+        - Use research_agent handoff for questions that need comprehensive analysis
+        - Use research_agent handoff when the user asks for research or investigation
+        - Use research_agent handoff when you need deep analysis with web browsing capabilities
 
         **Response Guidelines:**
         - Provide clear, well-structured responses
@@ -49,7 +56,8 @@ atlas_agent = Agent(
         When users ask what you do, explain that you're Atlas - an AI assistant for document analysis and web research.
     """,
     model="gpt-4.1",
-    tools=[run_pdf_analysis, run_research, WebSearchTool()],
+    tools=[run_pdf_analysis, WebSearchTool()],
+    handoffs=[research_agent]
 )
 
 def create_ephemeral_session() -> SQLiteSession:
