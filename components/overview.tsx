@@ -26,10 +26,6 @@ export const Overview = () => {
           PDF document analysis and advanced web research so 
           you get expert insights with AI-powered precision.
         </p>
-        <p>
-          Powered by Python (FastAPI) and modern React with streaming for a
-          smooth, low‑latency chat experience.
-        </p>
       </div>
     </motion.div>
   );
